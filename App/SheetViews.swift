@@ -45,6 +45,6 @@ struct ActivityList: View {
     var payments: [Payment] { store.ledger.payments.filter { !scheduledOnly || $0.scheduled } }
     var body: some View {
         if payments.isEmpty { ContentUnavailableView("No demo payments yet", systemImage: "list.bullet.rectangle", description: Text("Your simulated payments will appear here.")) }
-        else { List(payments) { payment in VStack(alignment: .leading, spacing: 7) { HStack { Text(payment.recipient.name).font(.headline); Spacer(); Text(Demo.money(payment.cents)) }; Text("\(payment.scheduled ? "Scheduled" : "Completed") • \(Demo.day(payment.date))").font(.subheadline).foregroundStyle(Style.gray); if !payment.message.isEmpty { Text(payment.message).font(.footnote) }; if payment.frequency != .once { Text("\(payment.frequency.rawValue) • demo only").font(.footnote) } }.accessibilityIdentifier("activity-\(payment.id)") } }
+        else { List(payments) { payment in VStack(alignment: .leading, spacing: 7) { HStack { Text(payment.recipient.name).font(.headline); Spacer(); Text(Demo.money(payment.cents)) }; Text("\(payment.scheduled ? "Scheduled" : "Completed") • \(Demo.day(payment.date))").font(.subheadline).foregroundStyle(Style.gray); if !payment.message.isEmpty { Text(payment.message).font(.footnote).accessibilityIdentifier("activity-message") }; if payment.frequency != .once { Text("\(payment.frequency.rawValue) • demo only").font(.footnote) } }.accessibilityElement(children: .contain).accessibilityIdentifier("activity-\(payment.id)") } }
     }
 }

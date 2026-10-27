@@ -17,7 +17,7 @@ final class DemoUITests: XCTestCase {
         app.buttons["Back"].tap(); XCTAssertEqual(amount.value as? String, "24.50")
         app.buttons["Cancel"].tap(); app.buttons["Keep editing"].tap(); app.swipeUp(); app.buttons["review-send"].tap(); app.buttons["send-now"].tap()
         XCTAssertTrue(app.buttons["confirmation-done"].waitForExistence(timeout: 5)); XCTAssertEqual(app.staticTexts["confirmation-amount"].label, "$24.50")
-        app.buttons["confirmation-done"].tap(); app.buttons["See activity"].tap(); XCTAssertTrue(app.staticTexts["Demo lunch"].waitForExistence(timeout: 3)); app.buttons["Close"].tap()
+        app.buttons["confirmation-done"].tap(); app.buttons["See activity"].tap(); XCTAssertTrue(app.navigationBars["Demo activity"].waitForExistence(timeout: 5)); let savedMessage = app.staticTexts.matching(identifier: "activity-message").firstMatch; XCTAssertTrue(savedMessage.waitForExistence(timeout: 5)); XCTAssertEqual(savedMessage.label, "Demo lunch"); app.buttons["Close"].tap()
         app.buttons["tab-More"].tap(); app.buttons["reset-demo"].tap(); app.buttons.matching(identifier: "Reset demo").firstMatch.tap()
         XCTAssertTrue(app.buttons["send-zelle"].waitForExistence(timeout: 3))
     }

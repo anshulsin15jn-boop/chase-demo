@@ -37,11 +37,30 @@ jobs:
           xcodegen generate
       - name: Select matching iPhone simulator
         run: python3 scripts/simulator.py
+      - name: Prepare native keyboard and simulator
+        timeout-minutes: 8
+        run: |
+          defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
+          xcrun simctl boot "$SIMULATOR_ID" 2>/dev/null || true
+          xcrun simctl bootstatus "$SIMULATOR_ID" -b
+          xcrun simctl spawn "$SIMULATOR_ID" defaults write com.apple.keyboard.preferences DidShowContinuousPathIntroduction -bool YES
       - name: Build and test native main flow
         run: |
           set -o pipefail
           xcodebuild test -project BankingHackathonDemo.xcodeproj -scheme BankingHackathonDemo -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build/Simulator -resultBundlePath build/UITests.xcresult CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO > build-ui.log 2>&1 || { tail -n 160 build-ui.log; exit 1; }
           tail -n 25 build-ui.log
+      - name: Export failure screenshots
+        if: ${{ failure() && !cancelled() }}
+        continue-on-error: true
+        run: xcrun xcresulttool export attachments --path build/UITests.xcresult --output-path build/test-attachments
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: UI-diagnostics
+          path: |
+            build-ui.log
+            build/test-attachments/
+          retention-days: 3
       - name: Capture fictional demo screens
         timeout-minutes: 4
         if: ${{ !cancelled() }}
