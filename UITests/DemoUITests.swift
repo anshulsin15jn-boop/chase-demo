@@ -37,7 +37,7 @@ final class DemoUITests: XCTestCase {
         app.swipeUp(); app.buttons["review-send"].tap(); app.buttons["send-now"].doubleTap()
         XCTAssertTrue(app.buttons["confirmation-done"].waitForExistence(timeout: 5)); XCTAssertTrue(app.staticTexts["confirmation-text"].label.contains("Nov 14, 2026"))
         app.buttons["confirmation-done"].tap(); app.buttons["See activity"].tap()
-        XCTAssertEqual(app.staticTexts["Jordan Ellis"].count, 1); XCTAssertTrue(app.staticTexts["Scheduled • Nov 14, 2026"].exists)
+        XCTAssertEqual(app.staticTexts.matching(identifier: "Jordan Ellis").count, 1); XCTAssertTrue(app.staticTexts["Scheduled • Nov 14, 2026"].exists)
     }
 
 }

@@ -9,7 +9,7 @@ struct EnterAmountView: View {
             NavHeader(title: "Enter Amount", back: { input = nil; store.path.removeLast() }, cancel: { input = nil; store.cancel() })
             if let draft = store.draft {
                 ScrollView { VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .top) { Identity(recipient: draft.recipient); Button { store.explain("Recipient details", "This recipient is fictional and registered for demonstration purposes only.") } label: { Image(systemName: "list.bullet.rectangle").font(.system(size: 22)) } }.padding(.top, 36).padding(.bottom, 28)
+                    HStack(alignment: .top) { Identity(recipient: draft.recipient); Button { store.explain("Recipient details", "This recipient is fictional and registered for demonstration purposes only.") } label: { Image(systemName: "list.bullet.rectangle").font(.system(size: 22)) } }.padding(.top, 46).padding(.bottom, 24)
                     Text("Amount").font(.system(size: 14)).foregroundStyle(Style.gray).frame(maxWidth: .infinity)
                     HStack(spacing: 0) { Text("$"); TextField("0.00", text: bind(\.amount)).keyboardType(.decimalPad).focused($input, equals: .amount).fixedSize().accessibilityIdentifier("amount-field") }.font(.system(size: 42, weight: .light)).frame(maxWidth: .infinity).padding(.top, 8).padding(.bottom, 4)
                     Rectangle().fill(Style.gray.opacity(0.7)).frame(height: 1)

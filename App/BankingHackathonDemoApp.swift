@@ -9,7 +9,7 @@ import DemoCore
         if let i = args.firstIndex(of: "--demo-screen"), args.indices.contains(i + 1) { demo.preview(args[i + 1]) }
         _store = State(initialValue: demo)
     }
-    var body: some Scene { WindowGroup { RootView().environment(store).preferredColorScheme(.light).tint(Style.blue) } }
+    var body: some Scene { WindowGroup { RootView().environment(store).environment(\.colorScheme, .light).preferredColorScheme(store.tab == .pay && store.path.isEmpty ? .dark : .light).tint(Style.blue) } }
 }
 struct RootView: View {
     @Environment(DemoStore.self) private var store

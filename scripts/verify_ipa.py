@@ -28,8 +28,8 @@ with zipfile.ZipFile(p) as z:
         if cmd==0x32: platforms.append(struct.unpack_from('<I',binary,cursor+8)[0])
         cursor+=size
     assert platforms==[2], 'Executable must target physical iOS, not iOS Simulator'
-    assert b'Avery Collins' in binary and b'Jordan Ellis' in binary, 'Expected synthetic fixtures'
+    assert b'DEMO CHECKING (...7264)' in binary and b'maple@example.com' in binary, 'Expected synthetic fixtures'
     assert not any(k.startswith('NSCamera') or 'Entitlement' in k for k in info), 'Unexpected capability'
-report={'file':p.name,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bundle_id':info['CFBundleIdentifier'],'display_name':info['CFBundleDisplayName'],'platform':'iPhoneOS','architecture':'arm64','macho_platform':'iOS (2)','minimum_ios':info['MinimumOSVersion'],'signed':False,'archive_entries':len(names),'fixture_check':'synthetic sender and recipient present'}
+report={'file':p.name,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bundle_id':info['CFBundleIdentifier'],'display_name':info['CFBundleDisplayName'],'platform':'iPhoneOS','architecture':'arm64','macho_platform':'iOS (2)','minimum_ios':info['MinimumOSVersion'],'signed':False,'archive_entries':len(names),'fixture_check':'synthetic account and example.com contact present'}
 print(json.dumps(report,indent=2))
 if len(sys.argv)>2: Path(sys.argv[2]).write_text(json.dumps(report,indent=2)+'\n')

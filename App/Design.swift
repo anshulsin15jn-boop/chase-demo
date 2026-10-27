@@ -34,7 +34,7 @@ struct NavHeader: View {
         ZStack {
             Text(title).font(.system(size: 18, weight: .semibold)).foregroundStyle(Color.black).lineLimit(1).padding(.horizontal, 68)
             HStack { if let back { Button(action: back) { Image(systemName: "chevron.left").font(.system(size: 22, weight: .medium)).frame(width: 44, height: 48) }.accessibilityLabel("Back") }; Spacer(); if let cancel { Button("Cancel", action: cancel).font(.system(size: 16, weight: .medium)).padding(.trailing, 20) } }
-        }.frame(height: 64).foregroundStyle(Style.blue).background(Style.background)
+        }.frame(height: 54).foregroundStyle(Style.blue).background(Style.background)
     }
 }
 struct Identity: View {
@@ -42,8 +42,8 @@ struct Identity: View {
     var centered = false
     var body: some View {
         VStack(alignment: centered ? .center : .leading, spacing: 7) {
-            HStack(alignment: .center, spacing: 12) { Avatar(recipient: recipient, size: 52); VStack(alignment: .leading, spacing: 3) { Text(recipient.name).font(.system(size: 14)); Text("Registered as \(recipient.name)").font(.system(size: 11)).foregroundStyle(Style.gray); Text(recipient.contact).font(.system(size: 11)).foregroundStyle(Style.gray); Label("Personal account", systemImage: "person").font(.system(size: 11)) } }
-            Label("Zelle® ID active since Feb 2025", systemImage: "calendar").font(.system(size: 11)).padding(.horizontal, 4).padding(.vertical, 2).background(Style.background)
+            HStack(alignment: .center, spacing: 10) { Avatar(recipient: recipient, size: 50); VStack(alignment: .leading, spacing: 3) { Text(recipient.name).font(.system(size: 12)); Text("Registered as \(recipient.name)").font(.system(size: 10)).foregroundStyle(Style.gray); Text(recipient.contact).font(.system(size: 10)).foregroundStyle(Style.gray); Label("Personal account", systemImage: "person").font(.system(size: 10)) } }
+            Label("Zelle® ID active since Feb 2025", systemImage: "calendar").font(.system(size: 10)).padding(.horizontal, 4).padding(.vertical, 2).background(Style.background).padding(.leading, centered ? 0 : 60)
         }.frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
     }
 }
