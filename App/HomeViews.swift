@@ -13,7 +13,7 @@ struct AccountsHomeView: View {
                     Button { store.explain("Messages") } label: { Image(systemName: "bubble.left.and.bubble.right.fill") }
                     Button { store.explain("Profile", "You are browsing as fictional sender Avery Collins.") } label: { Image(systemName: "person.crop.circle").font(.system(size: 22)) }
                 }.foregroundStyle(Style.gray).padding(.top, 14).padding(.bottom, 26)
-                ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: 8) { quick("+", width: 58) { store.explain("Quick actions") }; quick("Send | ZelleÂ®") { store.directory() }; quick("Deposit checks") { store.explain("Deposit checks") }; quick("Pay bills") { store.directory(due: true) } }.padding(.vertical, 2) }.padding(.bottom, 30)
+                ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: 8) { quick("+", width: 58) { store.explain("Quick actions") }; quick("Send | Zelle®") { store.directory() }; quick("Deposit checks") { store.explain("Deposit checks") }; quick("Pay bills") { store.directory(due: true) } }.padding(.vertical, 2) }.padding(.bottom, 30)
                 HStack { Text("Accounts").font(.system(size: 21, weight: .medium)); Spacer(); Button { store.explain("Account options") } label: { Image(systemName: "ellipsis.circle").font(.system(size: 20)).foregroundStyle(Style.gray) } }.padding(.bottom, 18)
                 VStack(spacing: 0) {
                     HStack { Text("Bank accounts (\(store.ledger.accounts.count))").font(.system(size: 14)); Spacer() }.padding(16).frame(height: 52).foregroundStyle(.white).background(Style.gradient)
@@ -23,16 +23,16 @@ struct AccountsHomeView: View {
                 Text("Explore more products").font(.system(size: 17, weight: .medium)).padding(.top, 36).padding(.bottom, 18)
                 ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: 9) { ForEach(products, id: \.1) { icon, title in Button { store.explain(title.replacingOccurrences(of: "\n", with: " ")) } label: { VStack(spacing: 12) { Image(systemName: icon).symbolRenderingMode(.palette).foregroundStyle(Style.blue, Color.cyan, Color.orange).font(.system(size: 31)); Text(title).font(.system(size: 11, weight: .medium)).multilineTextAlignment(.center).frame(height: 32) }.frame(width: 68, height: 106).background(.white, in: RoundedRectangle(cornerRadius: 8)).overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(.systemGray4), lineWidth: 0.7)) } } } }
                 HStack { Spacer(); Button("Explore products") { store.explain("Explore products") }.font(.system(size: 13, weight: .medium)).padding(.horizontal, 14).padding(.vertical, 7).background(Style.blue.opacity(0.07), in: Capsule()) }.padding(.top, 24).padding(.bottom, 32)
-                Button { store.explain("Credit Journey", "This demo does not access or calculate a real credit score.") } label: { HStack { VStack(alignment: .leading, spacing: 6) { Text("Credit JourneyÂ®").font(.system(size: 14)); Text("Get your free credit score").font(.system(size: 21, weight: .semibold)) }; Spacer(); Image(systemName: "gauge.with.dots.needle.50percent").font(.system(size: 30)).padding(10).background(Style.blue.opacity(0.06), in: Circle()) }.foregroundStyle(Style.navy).padding(16).overlay(RoundedRectangle(cornerRadius: Style.radius).stroke(Color(.systemGray4), lineWidth: 0.7)) }
-                Text("Hackathon demo â€¢ Fictional data").font(.caption2).foregroundStyle(Style.gray).padding(.vertical, 16)
+                Button { store.explain("Credit Journey", "This demo does not access or calculate a real credit score.") } label: { HStack { VStack(alignment: .leading, spacing: 6) { Text("Credit Journey®").font(.system(size: 14)); Text("Get your free credit score").font(.system(size: 21, weight: .semibold)) }; Spacer(); Image(systemName: "gauge.with.dots.needle.50percent").font(.system(size: 30)).padding(10).background(Style.blue.opacity(0.06), in: Circle()) }.foregroundStyle(Style.navy).padding(16).overlay(RoundedRectangle(cornerRadius: Style.radius).stroke(Color(.systemGray4), lineWidth: 0.7)) }
+                Text("Hackathon demo • Fictional data").font(.caption2).foregroundStyle(Style.gray).padding(.vertical, 16)
             }.padding(.horizontal, 17)
         }.background(Style.background)
     }
-    func quick(_ title: String, width: CGFloat? = nil, action: @escaping () -> Void) -> some View { Button(action: action) { Text(title).font(.system(size: title == "+" ? 28 : 11, weight: .semibold)).frame(minWidth: width).padding(.horizontal, title == "+" ? 0 : 16).frame(height: 34).background(.white, in: Capsule()).shadow(color: .black.opacity(0.14), radius: 0.7, y: 1) }.accessibilityIdentifier(title == "Send | ZelleÂ®" ? "send-zelle" : title) }
+    func quick(_ title: String, width: CGFloat? = nil, action: @escaping () -> Void) -> some View { Button(action: action) { Text(title).font(.system(size: title == "+" ? 28 : 11, weight: .semibold)).frame(minWidth: width).padding(.horizontal, title == "+" ? 0 : 16).frame(height: 34).background(.white, in: Capsule()).shadow(color: .black.opacity(0.14), radius: 0.7, y: 1) }.accessibilityIdentifier(title == "Send | Zelle®" ? "send-zelle" : title) }
 }
 struct PayTransferHubView: View {
     @Environment(DemoStore.self) private var store
-    private let actions = [("creditcard", "Pay bills"), ("dollarsign.circle", "Send money\nwith ZelleÂ®"), ("building.columns", "Wires & global\ntransfers"), ("rectangle.2.swap", "Transfer"), ("text.bubble", "Request/split\nwith ZelleÂ®"), ("creditcard.and.123", "Deposit\nchecks")]
+    private let actions = [("creditcard", "Pay bills"), ("dollarsign.circle", "Send money\nwith Zelle®"), ("building.columns", "Wires & global\ntransfers"), ("rectangle.2.swap", "Transfer"), ("text.bubble", "Request/split\nwith Zelle®"), ("creditcard.and.123", "Deposit\nchecks")]
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -41,6 +41,6 @@ struct PayTransferHubView: View {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 32) { ForEach(Array(actions.enumerated()), id: \.offset) { index, item in Button { switch index { case 0: store.directory(due: true); case 1: store.directory(); default: store.explain(item.1.replacingOccurrences(of: "\n", with: " ")) } } label: { VStack(spacing: 8) { Image(systemName: item.0).font(.system(size: 30, weight: .ultraLight)).frame(width: 56, height: 56).overlay(Circle().stroke(Style.blue, lineWidth: 1.2)); Text(item.1).font(.system(size: 11, weight: .medium)).multilineTextAlignment(.center).frame(height: 32) }.foregroundStyle(Style.blue) }.accessibilityIdentifier("hub-action-\(index)") } }.padding(.horizontal, 30).padding(.top, 28).padding(.bottom, 20)
                 VStack(spacing: 0) { MenuRow(title: "See activity", icon: "list.bullet.rectangle") { store.sheet = .activity }; MenuRow(title: "Manage recipients", icon: "person.3") { store.directory() }; MenuRow(title: "Manage external accounts", icon: "building.columns") { store.explain("Manage external accounts") }; MenuRow(title: "Settings", icon: "gearshape") { store.explain("Settings") } }.padding(.horizontal, 18)
             }
-        }.background(Style.background).background(alignment: .top) { Style.gradient.ignoresSafeArea(edges: .top) }
+        }.background(Style.background, ignoresSafeAreaEdges: .bottom).background(alignment: .top) { Style.gradient.ignoresSafeArea(edges: .top) }
     }
 }

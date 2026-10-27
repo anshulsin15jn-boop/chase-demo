@@ -31,7 +31,7 @@ final class PaymentTests: XCTestCase {
     func testSearchAndSyntheticContacts() {
         XCTAssertEqual(Demo.filter(Demo.recipients, query: "JORDAN").count, 1)
         XCTAssertEqual(Demo.filter(Demo.recipients, query: "2025550146").first?.id, "jordan")
-        XCTAssertEqual(Demo.filter(Demo.recipients, query: "maple.arts@").first?.id, "club")
+        XCTAssertEqual(Demo.filter(Demo.recipients, query: "maple@").first?.id, "club")
         XCTAssertTrue(Demo.filter(Demo.recipients, query: "unknown").isEmpty)
         XCTAssertTrue(Demo.recipients.allSatisfy { Demo.validContact($0.contact) })
         XCTAssertFalse(Demo.validContact("person@real.test")); XCTAssertFalse(Demo.validContact("123"))

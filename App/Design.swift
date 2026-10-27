@@ -16,8 +16,8 @@ struct Avatar: View {
     let recipient: Recipient
     var size: CGFloat = 48
     var body: some View {
-        Text(recipient.initial).font(.system(size: size * 0.49, weight: .light)).frame(width: size, height: size).background(Color(.systemGray6), in: Circle())
-            .overlay(alignment: .bottomTrailing) { Text("Æµ").font(.system(size: size * 0.30, weight: .heavy)).foregroundStyle(Style.purple).offset(x: 2, y: 2) }.accessibilityHidden(true)
+        Text(recipient.initial).foregroundStyle(Color.black).font(.system(size: size * 0.49, weight: .light)).frame(width: size, height: size).background(Color(.systemGray6), in: Circle())
+            .overlay(alignment: .bottomTrailing) { Text("Ƶ").font(.system(size: size * 0.30, weight: .heavy)).foregroundStyle(Style.purple).offset(x: 2, y: 2) }.accessibilityHidden(true)
     }
 }
 struct PrimaryButton: View {
@@ -43,7 +43,7 @@ struct Identity: View {
     var body: some View {
         VStack(alignment: centered ? .center : .leading, spacing: 7) {
             HStack(alignment: .center, spacing: 12) { Avatar(recipient: recipient, size: 52); VStack(alignment: .leading, spacing: 3) { Text(recipient.name).font(.system(size: 14)); Text("Registered as \(recipient.name)").font(.system(size: 11)).foregroundStyle(Style.gray); Text(recipient.contact).font(.system(size: 11)).foregroundStyle(Style.gray); Label("Personal account", systemImage: "person").font(.system(size: 11)) } }
-            Label("ZelleÂ® ID active since Feb 2025", systemImage: "calendar").font(.system(size: 11)).padding(.horizontal, 4).padding(.vertical, 2).background(Style.background)
+            Label("Zelle® ID active since Feb 2025", systemImage: "calendar").font(.system(size: 11)).padding(.horizontal, 4).padding(.vertical, 2).background(Style.background)
         }.frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
     }
 }

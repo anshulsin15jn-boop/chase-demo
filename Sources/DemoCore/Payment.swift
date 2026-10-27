@@ -43,7 +43,7 @@ public enum Demo {
     public static let recipients = [
         Recipient(id: "jordan", name: "Jordan Ellis", contact: "(202) 555-0146"),
         Recipient(id: "riley", name: "Riley Chen", contact: "(202) 555-0112"),
-        Recipient(id: "club", name: "MAPLE COMMUNITY ARTS COLLECTIVE, NORTH CHAPTER", contact: "maple.arts@example.com"),
+        Recipient(id: "club", name: "MAPLE DELTA ARTS CLUB - NORTH CHAPTER, DEMO CITY", contact: "maple@example.com"),
         Recipient(id: "taylor", name: "Taylor Morgan", contact: "(202) 555-0168"),
         Recipient(id: "casey", name: "Casey Brooks", contact: "casey.brooks@example.com"),
         Recipient(id: "morgan", name: "Morgan Reed", contact: "(202) 555-0183"),
