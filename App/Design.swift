@@ -21,7 +21,9 @@ struct Avatar: View {
             if recipient.initial.isEmpty { Image(systemName: "person").font(.system(size: size * 0.45, weight: .light)) }
             else { Text(recipient.initial).font(.system(size: size * (recipient.initial.count > 1 ? 0.38 : 0.49), weight: .light)) }
         }.foregroundStyle(Color.black).frame(width: size, height: size).background(Color(.systemGray6), in: Circle())
-            .overlay(alignment: .bottomTrailing) { if recipient.registered { Text("Ƶ").font(.system(size: size * 0.30, weight: .heavy)).foregroundStyle(Style.purple).offset(x: 2, y: 2) } }.accessibilityHidden(true)
+            .overlay(alignment: .bottomTrailing) { if recipient.registered { ZelleDemoBadge().frame(width: size * 0.36, height: size * 0.42).offset(x: 2, y: 2) } }
+            .accessibilityElement(children: .ignore).accessibilityIdentifier("recipient-avatar")
+            .accessibilityLabel(recipient.registered ? "Recipient avatar, demo Zelle badge" : "Recipient avatar")
     }
 }
 struct PrimaryButton: View {
@@ -49,17 +51,30 @@ struct Identity: View {
             HStack(alignment: .center, spacing: 10) {
                 Avatar(recipient: recipient, size: 50)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(recipient.displayName).font(.system(size: 12))
-                    if recipient.registered && !recipient.name.isEmpty { Text("Registered as \(recipient.name)").font(.system(size: 10)).foregroundStyle(Style.gray) }
-                    if !recipient.subtitle.isEmpty { Text(recipient.subtitle).font(.system(size: 10)).foregroundStyle(Style.gray) }
-                    if recipient.registered { HStack(spacing: 7) { Image(systemName: "person").foregroundStyle(Style.blue); Text("Personal account") }.font(.system(size: 10)) }
+                    RecipientNameLines(recipient: recipient)
+                    if recipient.registered { HStack(spacing: 7) { Image(systemName: "person").foregroundStyle(Style.blue); Text(recipient.metadata.accountType) }.font(.system(size: 10)).accessibilityIdentifier("recipient-account-type") }
                 }
             }
             if recipient.registered {
-                HStack(spacing: 4) { CalendarGlyph().stroke(Style.gray, lineWidth: 0.7).frame(width: 10, height: 11); Text("Zelle® ID active since Feb 2025") }
+                HStack(spacing: 4) { CalendarGlyph().stroke(Style.gray, lineWidth: 0.7).frame(width: 10, height: 11); Text("Zelle® ID active since \(recipient.metadata.activeSince)").fixedSize(horizontal: false, vertical: true) }
                     .font(.system(size: 10)).padding(.horizontal, 4).padding(.vertical, 2).background(Style.background).padding(.leading, centered ? 0 : 60)
+                    .accessibilityIdentifier("recipient-active-since")
             }
-        }.frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
+        }.fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
+    }
+}
+struct RecipientNameLines: View {
+    let recipient: Recipient
+    var confirmation = false
+    var body: some View {
+        VStack(alignment: confirmation ? .center : .leading, spacing: 3) {
+            Text(RecipientName.display(recipient, uppercase: confirmation)).font(.system(size: confirmation ? 18 : 12))
+                .accessibilityIdentifier("recipient-name")
+            if let registration = RecipientName.registration(recipient, uppercase: confirmation) {
+                Text(registration).font(.system(size: confirmation ? 11 : 10)).foregroundStyle(Style.gray).accessibilityIdentifier("recipient-registration")
+            }
+            if !recipient.subtitle.isEmpty { Text(recipient.subtitle).font(.system(size: confirmation ? 11 : 10)).foregroundStyle(Style.gray).accessibilityIdentifier("recipient-contact") }
+        }.multilineTextAlignment(confirmation ? .center : .leading).fixedSize(horizontal: false, vertical: true)
     }
 }
 struct RecipientRow: View {

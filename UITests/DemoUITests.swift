@@ -51,7 +51,7 @@ final class DemoUITests: XCTestCase {
         app.buttons["Back"].tap(); XCTAssertEqual(amount.value as? String, "$24.50")
         app.buttons["Cancel"].tap(); app.buttons["Keep editing"].tap(); app.swipeUp(); app.buttons["review-send"].tap(); app.buttons["send-now"].tap()
         XCTAssertTrue(app.buttons["confirmation-done"].waitForExistence(timeout: 5)); XCTAssertEqual(app.staticTexts["confirmation-amount"].label, "$24.50")
-        XCTAssertTrue(app.staticTexts["confirmation-text"].label.contains("Today"))
+        XCTAssertTrue(app.staticTexts["confirmation-text"].label.contains("coming on Nov 12, 2026."))
         app.buttons["confirmation-done"].tap()
         XCTAssertTrue(app.buttons["confirmation-done"].waitForNonExistence(timeout: 5))
         app.buttons["See activity"].staticTexts["See activity"].tap(); XCTAssertTrue(app.navigationBars["Demo activity"].waitForExistence(timeout: 5))
@@ -94,7 +94,7 @@ final class DemoUITests: XCTestCase {
     }
     func testOptionalRecipientFieldsThroughPaymentFlow() {
         onboard()
-        for (name, digits, label) in [("Jamie Vale", "", "Jamie Vale"), ("", "000000000", "000-000-000"), ("", "0000000000", "(000) 000-0000"), ("Morgan Vale", "2025550158", "Morgan Vale")] {
+        for (name, digits, label) in [("Jamie Vale", "", "Jamie Vale"), ("", "000000000", "000-000-000"), ("", "0000000000", "(000) 000-0000"), ("Alexandra-Marie O'Neil Rivera Bennett", "2025550158", "Alexandra-Marie O'Neil Rivera Bennett")] {
             if app.buttons["send-zelle"].exists { app.buttons["send-zelle"].tap() } else { app.buttons["hub-action-1"].tap() }
             app.buttons["add-recipient"].tap()
             if !name.isEmpty { let field = app.textFields["new-name"]; field.tap(); dismissKeyboardIntro(); field.typeText(name); keyboardDone() }
@@ -102,9 +102,30 @@ final class DemoUITests: XCTestCase {
             app.buttons["save-recipient"].tap(); XCTAssertTrue(app.buttons["recipient-search"].waitForExistence(timeout: 5))
             app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "recent-")).firstMatch.tap()
             let amount = app.textFields["amount-field"]; XCTAssertTrue(amount.waitForExistence(timeout: 5))
-            XCTAssertTrue(app.staticTexts[label].exists); XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Registered as")).count, 0)
+            XCTAssertTrue(app.staticTexts[label].exists)
+            XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Registered as")).count, name.isEmpty ? 0 : 1)
+            XCTAssertTrue(app.staticTexts["Personal account"].exists)
+            XCTAssertTrue(app.staticTexts["Zelle® ID active since Feb 2025"].exists)
+            let avatar = app.descendants(matching: .any).matching(identifier: "recipient-avatar").firstMatch
+            XCTAssertTrue(avatar.label.contains("demo Zelle badge"))
+            let metadata = app.descendants(matching: .any).matching(identifier: "recipient-active-since").firstMatch
+            XCTAssertGreaterThan(amount.frame.minY, metadata.frame.maxY)
             amount.tap(); amount.typeText("500"); keyboardDone(); app.swipeUp(); app.buttons["review-send"].tap(); app.buttons["send-now"].tap()
-            XCTAssertTrue(app.buttons["confirmation-done"].waitForExistence(timeout: 5)); XCTAssertTrue(app.staticTexts["confirmation-text"].label.contains(label)); app.buttons["confirmation-done"].tap()
+            XCTAssertTrue(app.buttons["confirmation-done"].waitForExistence(timeout: 5))
+            let expectedName = label.uppercased()
+            XCTAssertEqual(app.staticTexts["recipient-name"].label, expectedName)
+            XCTAssertTrue(app.staticTexts["confirmation-text"].label.hasPrefix("We'll let \(expectedName) know your payment is coming on Nov 12, 2026."))
+            XCTAssertEqual(app.staticTexts["confirmation-amount"].label, "$5.00")
+            XCTAssertTrue(avatar.label.contains("demo Zelle badge"))
+            if !name.isEmpty { XCTAssertEqual(app.staticTexts["recipient-registration"].label, "Registered as \(expectedName)") }
+            else { XCTAssertFalse(app.staticTexts["recipient-registration"].exists) }
+            app.swipeUp()
+            XCTAssertEqual(app.staticTexts["siri-explanation"].label, "Add a Siri shortcut, such as “Pay \(expectedName)” to save time when sending money.")
+            XCTAssertTrue(app.buttons["add-to-siri"].exists)
+            if name == "Jamie Vale" {
+                app.buttons["add-to-siri"].tap(); XCTAssertTrue(app.navigationBars["Demo information"].waitForExistence(timeout: 5)); app.buttons["Close"].tap()
+            }
+            app.buttons["confirmation-done"].tap()
         }
     }
     func testEmptyAndInvalidRecipientForm() {

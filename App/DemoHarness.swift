@@ -34,6 +34,15 @@ import DemoCore
         if screen == "onboarding" { return }
         store.completeOnboarding("Avery")
         switch screen {
+        case "amount-created", "confirmation-created", "confirmation-long", "confirmation-number":
+            let name = screen == "confirmation-number" ? "" : screen == "confirmation-long" ? "Alexandra-Marie O'Neil Rivera Bennett" : "Jamie Vale"
+            let recipient = try! store.state.addRecipient(name: name, number: "2025550158")
+            store.select(recipient)
+            if screen != "amount-created", let original = store.draft {
+                var draft = original; draft.amount = try! CurrencyInput(digits: "500")
+                store.submitted = try! store.state.ledger.submit(draft, id: store.submissionID, sender: store.firstName, now: date, calendar: calendar)
+                store.path = [.confirmation]
+            }
         case "hub": store.tab = .pay
         case "directory": store.path = [.directory]
         case "search": store.path = [.directory, .search]

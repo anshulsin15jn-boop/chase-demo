@@ -7,7 +7,7 @@ on:
         required: true
       tag:
         description: Unique prerelease tag
-        default: v0.2.0-demo
+        default: v0.3.0-demo
         required: true
 permissions:
   contents: read
@@ -37,4 +37,4 @@ jobs:
         run: |
           set -euo pipefail
           SHA=$(python3 -c 'import json; print(json.load(open("run.json"))["headSha"])')
-          gh release create "$TAG" release/ChaseDemo-unsigned.ipa release/build-verification.json release/source-commit.txt --target "$SHA" --prerelease --title 'Chase Demo 0.2.0' --notes-file docs/RELEASE.md
+          gh release create "$TAG" release/ChaseDemo-unsigned.ipa release/build-verification.json release/source-commit.txt --target "$SHA" --prerelease --title 'Chase Demo 0.3.0' --notes-file docs/RELEASE.md

@@ -142,7 +142,7 @@ final class PaymentTests: XCTestCase {
     func testRecipientNameOnlyNumberOnlyCombinedAndEmail() throws {
         let nameOnly = try Recipient.create(name: " Jamie Vale ", number: "")
         XCTAssertEqual(nameOnly.displayName, "Jamie Vale"); XCTAssertEqual(nameOnly.initial, "JV")
-        XCTAssertEqual(nameOnly.subtitle, ""); XCTAssertFalse(nameOnly.registered)
+        XCTAssertEqual(nameOnly.subtitle, ""); XCTAssertTrue(nameOnly.registered)
         let numberOnly = try Recipient.create(name: "", number: "202555014")
         XCTAssertEqual(numberOnly.displayName, "202-555-014"); XCTAssertEqual(numberOnly.name, "")
         XCTAssertEqual(numberOnly.initial, ""); XCTAssertEqual(numberOnly.subtitle, "")
@@ -208,5 +208,59 @@ final class PaymentTests: XCTestCase {
         value.message += "x"; XCTAssertThrowsError(try validate(value)); value.message = ""; value.accountID = "missing"; XCTAssertThrowsError(try validate(value))
         var ledger = Ledger(); try ledger.submit(draft(), id: UUID(), sender: "Avery", now: now, calendar: calendar)
         ledger = Ledger(); XCTAssertTrue(ledger.payments.isEmpty); XCTAssertEqual(ledger.accounts, Demo.accounts)
+    }
+    func testCreatedRecipientsHaveCompleteDemoMetadata() throws {
+        for recipient in [try Recipient.create(name: "Jamie Vale", number: ""), try Recipient.create(name: "", number: "000000000"), try Recipient.create(name: "Morgan Vale", number: "2025550158")] {
+            XCTAssertTrue(recipient.registered)
+            XCTAssertEqual(recipient.metadata.accountType, "Personal account")
+            XCTAssertEqual(recipient.metadata.activeSince, "Feb 2025")
+            XCTAssertEqual(try JSONDecoder().decode(Recipient.self, from: JSONEncoder().encode(recipient)), recipient)
+        }
+    }
+    func testLegacyFalseRegistrationDefaultsMigrateWithoutLosingData() throws {
+        var state = LocalState(); try state.onboard(firstName: "Avery")
+        let recipient = try state.addRecipient(name: "Jamie Vale", number: "2025550155")
+        let payment = try state.ledger.submit(draft("500", recipient: recipient), id: UUID(), sender: "Avery", now: now, calendar: calendar)
+        var object = try JSONSerialization.jsonObject(with: JSONEncoder().encode(state)) as! [String: Any]
+        object["recipients"] = state.recipients.map { ["id": $0.id, "name": $0.name, "phoneDigits": $0.phoneDigits, "email": $0.email, "registered": false] as [String: Any] }
+        var ledger = object["ledger"] as! [String: Any]
+        var payments = ledger["payments"] as! [[String: Any]]
+        var saved = payments[0]["recipient"] as! [String: Any]; saved.removeValue(forKey: "metadata"); saved["registered"] = false
+        payments[0]["recipient"] = saved; ledger["payments"] = payments; object["ledger"] = ledger
+        let restored = try JSONDecoder().decode(LocalState.self, from: JSONSerialization.data(withJSONObject: object))
+        XCTAssertEqual(restored.recipients.map(\.id), state.recipients.map(\.id))
+        XCTAssertEqual(restored.recipients.first?.name, recipient.name); XCTAssertEqual(restored.recipients.first?.phoneDigits, recipient.phoneDigits)
+        XCTAssertTrue(restored.recipients.allSatisfy(\.registered)); XCTAssertEqual(restored.profile, state.profile)
+        XCTAssertEqual(restored.ledger.accounts, state.ledger.accounts)
+        XCTAssertEqual(restored.ledger.payments.first?.id, payment.id); XCTAssertEqual(restored.ledger.payments.first?.date, payment.date)
+        XCTAssertEqual(restored.ledger.payments.first?.cents, 500); XCTAssertTrue(restored.ledger.payments.first!.recipient.registered)
+    }
+    func testExplicitMetadataSurvivesRoundTrip() throws {
+        let metadata = RecipientMetadata(registered: false, accountType: "Demo business account", activeSince: "Mar 2024")
+        let recipient = Recipient(id: "explicit", name: "Maple Club", metadata: metadata)
+        let restored = try JSONDecoder().decode(Recipient.self, from: JSONEncoder().encode(recipient))
+        XCTAssertEqual(restored.metadata, metadata); XCTAssertFalse(restored.registered)
+        XCTAssertNil(RecipientName.registration(restored))
+    }
+    func testFullUppercaseNamesAndMissingIdentityFields() throws {
+        let recipient = try Recipient.create(name: "Élodie-Marie O'Neil Vale", number: "")
+        XCTAssertEqual(RecipientName.display(recipient, uppercase: true), "ÉLODIE-MARIE O'NEIL VALE")
+        XCTAssertEqual(RecipientName.registration(recipient, uppercase: true), "Registered as ÉLODIE-MARIE O'NEIL VALE")
+        let numberOnly = try Recipient.create(name: "", number: "000000000")
+        XCTAssertEqual(RecipientName.display(numberOnly, uppercase: true), "000-000-000")
+        XCTAssertNil(RecipientName.registration(numberOnly)); XCTAssertEqual(numberOnly.subtitle, "")
+    }
+    func testConfirmationCopyUsesImmutableSnapshotAndFormattedCivilDate() throws {
+        var ledger = Ledger(); var value = try draft("500", recipient: try Recipient.create(name: "Jordan Ellis", number: "2025550146"))
+        let selected = calendar.date(byAdding: .day, value: 2, to: now)!
+        value.selectDate(selected, calendar: calendar)
+        let payment = try ledger.submit(value, id: UUID(), sender: "Avery", now: now, calendar: calendar)
+        let copy = ConfirmationContent(payment: payment)
+        XCTAssertEqual(copy.amount, "$5.00"); XCTAssertEqual(copy.sendDate, "Nov 14, 2026")
+        XCTAssertEqual(copy.paragraph, "We'll let JORDAN ELLIS know your payment is coming on Nov 14, 2026. If they aren't registered with Zelle®, they'll receive an email or text letting them know how to register. We'll send your money after they complete their registration.")
+        XCTAssertEqual(copy.siriExplanation, "Add a Siri shortcut, such as “Pay JORDAN ELLIS” to save time when sending money.")
+        XCTAssertEqual(copy.registration, "Registered as JORDAN ELLIS"); XCTAssertEqual(copy.contact, "(202) 555-0146")
+        value.amount = CurrencyInput(); value.recipient = Demo.recipients[1]; value.selectToday(now: now, calendar: calendar)
+        XCTAssertEqual(ConfirmationContent(payment: payment), copy)
     }
 }

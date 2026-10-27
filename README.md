@@ -4,6 +4,10 @@ An independent native SwiftUI hackathon simulation, not affiliated with Chase or
 
 ## Version 0.2 update
 
+Version 0.3 adds a shared demo recipient identity and a revised Confirmation screen. Created and legacy recipients default to simulated registration, Personal account and Feb 2025 activity metadata. These are presentation fixtures, not registration checks. A native vector badge is shared by every avatar, and the Siri demonstration button uses a drawn multicolor orb.
+
+Confirmation uses the immutable submitted payment's full uppercase recipient name, selected calendar date and exact amount. Its reference-style notification paragraph is demonstration interface copy only; no messages or money are sent. The entry row continues to show Today when appropriate. See [version 0.3 verification](docs/VERIFICATION-0.3.md) for the update's build and release status.
+
 The app asks for a first name once, including after an update from version 0.1. Surrounding whitespace is removed; empty names are rejected. Accents, apostrophes and hyphens are supported. The existing local storage key and bundle identifier are retained, so adding the first name preserves saved recipients, balances and activity.
 
 For a synthetic name of Avery, account labels are `AVERY CHECKING (..5020)` and `AVERY SAVINGS (..5020)`. Checking and savings remain separate accounts. The local first name is also the simulated sender identity.
@@ -16,7 +20,9 @@ Every new payment starts at a real, dark `$0.00`. Number pad digits insert cents
 
 Name only, number only, or a combination are supported. Email remains an optional separate field. At least one valid value is required. Any 9 or 10 ASCII digits are accepted for this local simulation. Phone input uses a number pad and is stored as an unformatted string, preserving leading zeros. Nine digits display as three groups of three; ten digits use the standard parenthesized area code format. No missing digit is invented.
 
-Names without contacts do not show blank contact or registration lines. Number-only recipients use the formatted number as their label and a generic avatar. Locally created recipients are not represented as registered with an external service. Repeated saves are guarded, duplicates are checked locally, and recipients persist between launches.
+Names without contacts do not show blank contact lines. Number-only recipients use the formatted number as their label and a generic avatar, without an invented Registered as name. Every new recipient receives the same simulated registration metadata as the samples. Repeated saves are guarded, duplicates are checked locally, and recipients persist between launches.
+
+Version 0.1/0.2 stored an automatic false registration value for created recipients. Decoding recipients without the new metadata object replaces that legacy presentation default, including recipients embedded in activity snapshots. IDs, names, raw numbers, account balances, payment IDs, dates and amounts are retained. Explicit metadata stored in the new schema takes precedence, including an explicit unregistered state. The local storage key remains unchanged.
 
 Bundled samples and automated tests use synthetic data. Reserved numbers and example.com addresses are a fixture privacy policy, not a restriction on local runtime entry. Do not include real user data in shared screenshots or reports.
 
@@ -46,7 +52,7 @@ Windows is used for editing, downloading and local signing tools. GitHub's stand
 
 The existing manual [build workflow](.github/workflows/ios.yml) runs source privacy checks, DemoCore tests, hosted state tests and native UI tests. It validates the supplied icon catalog, generates the Xcode project, captures synthetic screens and builds a Release physical-device app with signing disabled. The verifier checks iPhoneOS metadata, ARM64 Mach-O platform 2, no executable code signature, correct icon metadata and IPA structure. Artifacts expire after three days. The separate [publication job](.github/workflows/publish.yml) alone has release write permission and verifies the successful source run and file hash before creating a new prerelease.
 
-The display name is **Chase Demo**, version **0.2.0**, build **2**. Internal Xcode target and archive folder names remain BankingHackathonDemo. The distinct bundle identifier is unchanged. No Apple signing credentials are used in CI.
+The display name is **Chase Demo**, version **0.3.0**, build **3**. Internal Xcode target and archive folder names remain BankingHackathonDemo. The distinct bundle identifier is unchanged. No Apple signing credentials are used in CI.
 
 On a Mac, run `swift test`, `python3 scripts/generate_icon.py`, `xcodegen generate`, and open the generated project. The historical icon script name is retained, but it only validates the committed supplied artwork and nine opaque icon sizes. It does not generate replacement artwork.
 

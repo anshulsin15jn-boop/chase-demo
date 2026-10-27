@@ -32,18 +32,38 @@ public enum PhoneNumber {
         return digits
     }
 }
+public struct RecipientMetadata: Hashable, Codable, Sendable {
+    public var registered: Bool
+    public var accountType: String
+    public var activeSince: String
+    public init(registered: Bool = true, accountType: String = "Personal account", activeSince: String = "Feb 2025") {
+        self.registered = registered; self.accountType = accountType; self.activeSince = activeSince
+    }
+    public static let demo = RecipientMetadata()
+}
+public enum RecipientName {
+    public static func display(_ recipient: Recipient, uppercase: Bool = false) -> String {
+        uppercase ? recipient.displayName.uppercased() : recipient.displayName
+    }
+    public static func registration(_ recipient: Recipient, uppercase: Bool = false) -> String? {
+        guard recipient.registered, !recipient.name.isEmpty else { return nil }
+        return "Registered as " + (uppercase ? recipient.name.uppercased() : recipient.name)
+    }
+}
 public struct Recipient: Identifiable, Hashable, Codable, Sendable {
     public let id: String
     public let name: String
     public let phoneDigits: String
     public let email: String
-    public let registered: Bool
+    public let metadata: RecipientMetadata
+    public var registered: Bool { metadata.registered }
     public var displayName: String { !name.isEmpty ? name : (!phoneDigits.isEmpty ? PhoneNumber.display(phoneDigits) : email) }
     public var contact: String { !phoneDigits.isEmpty ? PhoneNumber.display(phoneDigits) : email }
     public var subtitle: String { !name.isEmpty ? contact : (!phoneDigits.isEmpty ? email : "") }
     public var initial: String { name.split(whereSeparator: \.isWhitespace).prefix(2).map { String($0.prefix(1)) }.joined().uppercased() }
-    public init(id: String, name: String, phoneDigits: String = "", email: String = "", registered: Bool = false) {
-        self.id = id; self.name = name; self.phoneDigits = phoneDigits; self.email = email; self.registered = registered
+    public init(id: String, name: String, phoneDigits: String = "", email: String = "", registered: Bool = true, metadata: RecipientMetadata? = nil) {
+        self.id = id; self.name = name; self.phoneDigits = phoneDigits; self.email = email
+        self.metadata = metadata ?? RecipientMetadata(registered: registered)
     }
     public static func create(name: String, number: String, email: String = "", id: String = UUID().uuidString) throws -> Recipient {
         let n = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -55,7 +75,7 @@ public struct Recipient: Identifiable, Hashable, Codable, Sendable {
         if !e.isEmpty, e.range(of: #"^[^\s@]+@[^\s@]+\.[^\s@]+$"#, options: .regularExpression) == nil { throw InputError.email }
         return Recipient(id: id, name: n, phoneDigits: phone, email: e)
     }
-    enum CodingKeys: String, CodingKey { case id, name, contact, phoneDigits, email, registered }
+    enum CodingKeys: String, CodingKey { case id, name, contact, phoneDigits, email, registered, metadata }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(String.self, forKey: .id)
@@ -64,12 +84,15 @@ public struct Recipient: Identifiable, Hashable, Codable, Sendable {
         let oldDigits = legacy.utf8.filter { (48...57).contains($0) }
         phoneDigits = try c.decodeIfPresent(String.self, forKey: .phoneDigits) ?? (legacy.contains("@") ? "" : String(decoding: oldDigits, as: UTF8.self))
         email = try c.decodeIfPresent(String.self, forKey: .email) ?? (legacy.contains("@") ? legacy : "")
-        registered = try c.decodeIfPresent(Bool.self, forKey: .registered) ?? ["jordan", "riley", "club", "taylor", "casey", "morgan", "sam", "alex", "devon"].contains(id)
+        // Older versions automatically wrote false for created recipients. Upgrade that
+        // unversioned presentation default; explicit metadata in the new schema wins.
+        metadata = try c.decodeIfPresent(RecipientMetadata.self, forKey: .metadata) ?? .demo
     }
     public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(id, forKey: .id); try c.encode(name, forKey: .name)
         try c.encode(phoneDigits, forKey: .phoneDigits); try c.encode(email, forKey: .email); try c.encode(registered, forKey: .registered)
+        try c.encode(metadata, forKey: .metadata)
     }
 }
 public struct Account: Identifiable, Hashable, Codable, Sendable {
@@ -153,6 +176,29 @@ public struct Payment: Identifiable, Equatable, Codable, Sendable {
     public let scheduled: Bool
     public let sender: String
     public let timeZoneIdentifier: String?
+}
+public struct ConfirmationContent: Equatable, Sendable {
+    public let recipientName: String
+    public let registration: String?
+    public let contact: String
+    public let amount: String
+    public let sendDate: String
+    public let paragraph: String
+    public let siriExplanation: String
+    public init(payment: Payment) {
+        recipientName = RecipientName.display(payment.recipient, uppercase: true)
+        registration = RecipientName.registration(payment.recipient, uppercase: true)
+        contact = payment.recipient.subtitle
+        amount = Demo.money(payment.cents)
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = payment.timeZoneIdentifier.flatMap(TimeZone.init(identifier:)) ?? TimeZone(secondsFromGMT: 0)!
+        formatter.dateFormat = "MMM d, yyyy"
+        sendDate = formatter.string(from: payment.date)
+        paragraph = "We'll let \(recipientName) know your payment is coming on \(sendDate). If they aren't registered with Zelle®, they'll receive an email or text letting them know how to register. We'll send your money after they complete their registration."
+        siriExplanation = "Add a Siri shortcut, such as “Pay \(recipientName)” to save time when sending money."
+    }
 }
 public enum PaymentError: String, Error {
     case invalid = "Please tell us an amount."

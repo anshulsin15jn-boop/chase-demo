@@ -11,8 +11,8 @@ with zipfile.ZipFile(p) as z:
     info=plistlib.loads(z.read(base+'Info.plist'))
     assert info['CFBundleIdentifier']=='io.hackathon.fictionalbank.chaselookalike'
     assert info['CFBundleDisplayName']=='Chase Demo'
-    assert info['CFBundleShortVersionString']=='0.2.0'
-    assert int(info['CFBundleVersion']) >= 2
+    assert info['CFBundleShortVersionString']=='0.3.0'
+    assert int(info['CFBundleVersion']) >= 3
     assert info['CFBundlePackageType']=='APPL'
     assert info['CFBundleSupportedPlatforms']==['iPhoneOS']
     assert info['DTPlatformName']=='iphoneos'

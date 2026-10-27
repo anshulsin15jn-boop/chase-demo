@@ -104,24 +104,28 @@ struct ConfirmationView: View {
     @State private var content = false
     var body: some View {
         VStack(spacing: 0) {
-            NavHeader(title: "Confirmation")
+            VStack(spacing: 3) {
+                Text("Confirmation").font(.system(size: 18, weight: .semibold))
+                Text("HACKATHON DEMO").font(.system(size: 12)).foregroundStyle(Style.gray)
+            }.frame(maxWidth: .infinity).frame(height: 54).background(Style.background)
             if let payment = store.submitted {
-                ScrollView { VStack(spacing: 0) {
-                    Image(systemName: "checkmark").font(.system(size: 31, weight: .semibold)).foregroundStyle(.white).frame(width: 46, height: 46).background(Style.teal, in: Circle()).scaleEffect(check ? 1 : 0.6).opacity(check ? 1 : 0).padding(.top, 26).padding(.bottom, 24)
-                    VStack(spacing: 0) {
-                        Text("Your demo payment to \(payment.recipient.displayName) for \(store.dateLabel(payment)) is \(payment.scheduled ? "scheduled" : "complete"). This confirmation is a local simulation. No real money, emails, texts, or notifications have been sent.")
-                            .font(.system(size: 16)).multilineTextAlignment(.center).lineSpacing(3).accessibilityIdentifier("confirmation-text")
-                        Text(Demo.money(payment.cents)).font(.system(size: 36)).padding(.top, 27).padding(.bottom, 24).accessibilityIdentifier("confirmation-amount")
-                        Avatar(recipient: payment.recipient, size: 52)
-                        Text(payment.recipient.displayName).font(.system(size: 18)).padding(.top, 22)
-                        if payment.recipient.registered && !payment.recipient.name.isEmpty { Text("Registered as \(payment.recipient.name)").font(.system(size: 11)).padding(.top, 3) }
-                        if !payment.recipient.subtitle.isEmpty { Text(payment.recipient.subtitle).font(.system(size: 11)).multilineTextAlignment(.center).padding(.top, 3) }
-                        Text("Add a Siri shortcut to save time when sending money to this recipient.").font(.system(size: 13)).multilineTextAlignment(.center).padding(.top, 48)
-                        Button { store.explain("Add to Siri", "This is a demonstration only. No Siri integration, notification, or real transfer is created.") } label: {
-                            Label("Add to Siri", systemImage: "waveform.circle.fill").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.black).padding(.horizontal, 20).frame(height: 52).overlay(RoundedRectangle(cornerRadius: 5).stroke(.gray, lineWidth: 0.6))
-                        }.padding(.top, 18)
-                    }.opacity(content ? 1 : 0)
-                }.padding(.horizontal, 20).padding(.bottom, 20) }
+                let copy = ConfirmationContent(payment: payment)
+                GeometryReader { geometry in
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            Image(systemName: "checkmark").font(.system(size: 29, weight: .semibold)).foregroundStyle(.white).frame(width: 44, height: 44).background(Style.teal, in: Circle()).scaleEffect(check ? 1 : 0.6).opacity(check ? 1 : 0).padding(.top, 24).padding(.bottom, 24)
+                            VStack(spacing: 0) {
+                                Text(copy.paragraph).font(.system(size: 16)).multilineTextAlignment(.center).lineSpacing(2).fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("confirmation-text")
+                                Text(copy.amount).font(.system(size: 36)).padding(.top, 27).padding(.bottom, 24).accessibilityIdentifier("confirmation-amount")
+                                Avatar(recipient: payment.recipient, size: 50)
+                                RecipientNameLines(recipient: payment.recipient, confirmation: true).padding(.top, 22)
+                                Text(copy.siriExplanation).font(.system(size: 13)).multilineTextAlignment(.center).lineSpacing(2).fixedSize(horizontal: false, vertical: true).padding(.top, 68).accessibilityIdentifier("siri-explanation")
+                                SiriDemoButton { store.explain("Add to Siri", "This is a demonstration only. No Siri integration, notification, or real transfer is created.") }.padding(.top, 18)
+                            }.opacity(content ? 1 : 0)
+                            Spacer(minLength: 24)
+                        }.padding(.horizontal, 20).frame(minHeight: geometry.size.height, alignment: .top)
+                    }
+                }
                 PrimaryButton(title: "Done") { store.done() }.accessibilityIdentifier("confirmation-done").padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 26)
             }
         }.background(.white).task {
