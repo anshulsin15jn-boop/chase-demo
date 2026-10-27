@@ -22,6 +22,7 @@ targets:
       - package: DemoCore
     settings:
       base:
+        TARGETED_DEVICE_FAMILY: '1'
         PRODUCT_BUNDLE_IDENTIFIER: io.hackathon.fictionalbank.chaselookalike
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_NAME: BankingHackathonDemo

@@ -15,7 +15,7 @@ with zipfile.ZipFile(p) as z:
     assert info['CFBundleSupportedPlatforms']==['iPhoneOS']
     assert info['DTPlatformName']=='iphoneos'
     assert info['MinimumOSVersion']=='17.0'
-    assert info['UIDeviceFamily']==[1]
+    assert info['UIDeviceFamily']==[1], 'Expected iPhone-only device family; got '+repr(info['UIDeviceFamily'])
     assert not any('_CodeSignature/' in n or n.endswith('embedded.mobileprovision') for n in names)
     assert not any(n.lower().endswith(('.jpeg','.jpg','.heic','.webp')) for n in names), 'Unexpected reference-like image'
     binary=z.read(base+info['CFBundleExecutable'])
