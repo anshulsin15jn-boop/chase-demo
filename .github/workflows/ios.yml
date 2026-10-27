@@ -43,7 +43,8 @@ jobs:
           xcodebuild test -project BankingHackathonDemo.xcodeproj -scheme BankingHackathonDemo -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build/Simulator -resultBundlePath build/UITests.xcresult CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO > build-ui.log 2>&1 || { tail -n 160 build-ui.log; exit 1; }
           tail -n 25 build-ui.log
       - name: Capture fictional demo screens
-        if: always()
+        timeout-minutes: 4
+        if: ${{ !cancelled() }}
         run: bash scripts/capture.sh
       - name: Build unsigned physical iPhone application
         run: |
@@ -66,7 +67,7 @@ jobs:
           retention-days: 3
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           name: Fictional-demo-visual-and-test-results
           path: |

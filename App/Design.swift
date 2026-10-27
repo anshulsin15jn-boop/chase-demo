@@ -17,7 +17,7 @@ struct Avatar: View {
     var size: CGFloat = 48
     var body: some View {
         Text(recipient.initial).font(.system(size: size * 0.49, weight: .light)).frame(width: size, height: size).background(Color(.systemGray6), in: Circle())
-            .overlay(alignment: .bottomTrailing) { Text("?").font(.system(size: size * 0.30, weight: .heavy)).foregroundStyle(Style.purple).offset(x: 2, y: 2) }.accessibilityHidden(true)
+            .overlay(alignment: .bottomTrailing) { Text("Æµ").font(.system(size: size * 0.30, weight: .heavy)).foregroundStyle(Style.purple).offset(x: 2, y: 2) }.accessibilityHidden(true)
     }
 }
 struct PrimaryButton: View {
@@ -32,7 +32,7 @@ struct NavHeader: View {
     var cancel: (() -> Void)?
     var body: some View {
         ZStack {
-            Text(title).font(.system(size: 18, weight: .semibold)).foregroundStyle(.primary).lineLimit(1).padding(.horizontal, 68)
+            Text(title).font(.system(size: 18, weight: .semibold)).foregroundStyle(Color.black).lineLimit(1).padding(.horizontal, 68)
             HStack { if let back { Button(action: back) { Image(systemName: "chevron.left").font(.system(size: 22, weight: .medium)).frame(width: 44, height: 48) }.accessibilityLabel("Back") }; Spacer(); if let cancel { Button("Cancel", action: cancel).font(.system(size: 16, weight: .medium)).padding(.trailing, 20) } }
         }.frame(height: 64).foregroundStyle(Style.blue).background(Style.background)
     }
@@ -43,7 +43,7 @@ struct Identity: View {
     var body: some View {
         VStack(alignment: centered ? .center : .leading, spacing: 7) {
             HStack(alignment: .center, spacing: 12) { Avatar(recipient: recipient, size: 52); VStack(alignment: .leading, spacing: 3) { Text(recipient.name).font(.system(size: 14)); Text("Registered as \(recipient.name)").font(.system(size: 11)).foregroundStyle(Style.gray); Text(recipient.contact).font(.system(size: 11)).foregroundStyle(Style.gray); Label("Personal account", systemImage: "person").font(.system(size: 11)) } }
-            Label("Zelle? ID active since Feb 2025", systemImage: "calendar").font(.system(size: 11)).padding(.horizontal, 4).padding(.vertical, 2).background(Style.background)
+            Label("ZelleÂ® ID active since Feb 2025", systemImage: "calendar").font(.system(size: 11)).padding(.horizontal, 4).padding(.vertical, 2).background(Style.background)
         }.frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
     }
 }
@@ -51,7 +51,7 @@ struct RecipientRow: View {
     let recipient: Recipient
     let action: () -> Void
     var body: some View {
-        Button(action: action) { HStack(spacing: 14) { Avatar(recipient: recipient, size: 36); VStack(alignment: .leading, spacing: 5) { Text(recipient.name).font(.system(size: 16)).foregroundStyle(.primary); Text(recipient.contact).font(.system(size: 11)).foregroundStyle(Style.gray) }; Spacer(minLength: 4); Image(systemName: "chevron.right").foregroundStyle(Style.gray) }.padding(.vertical, 12).frame(minHeight: 58).contentShape(Rectangle()) }.buttonStyle(.plain).accessibilityIdentifier("recipient-\(recipient.id)")
+        Button(action: action) { HStack(spacing: 14) { Avatar(recipient: recipient, size: 36); VStack(alignment: .leading, spacing: 5) { Text(recipient.name).font(.system(size: 16)).foregroundStyle(Color.black); Text(recipient.contact).font(.system(size: 11)).foregroundStyle(Style.gray) }; Spacer(minLength: 4); Image(systemName: "chevron.right").foregroundStyle(Style.gray) }.padding(.vertical, 12).frame(minHeight: 58).contentShape(Rectangle()) }.buttonStyle(.plain).accessibilityIdentifier("recipient-\(recipient.id)")
         Divider()
     }
 }
@@ -59,5 +59,5 @@ struct MenuRow: View {
     let title: String
     let icon: String
     let action: () -> Void
-    var body: some View { Button(action: action) { HStack(spacing: 14) { Image(systemName: icon).font(.system(size: 23, weight: .light)).foregroundStyle(Style.gray).frame(width: 26); Text(title).font(.system(size: 14)).foregroundStyle(.primary); Spacer(); Image(systemName: "chevron.right").font(.system(size: 14)).foregroundStyle(Style.gray) }.frame(minHeight: 66).contentShape(Rectangle()) }.buttonStyle(.plain); Divider() }
+    var body: some View { Button(action: action) { HStack(spacing: 14) { Image(systemName: icon).font(.system(size: 23, weight: .light)).foregroundStyle(Style.gray).frame(width: 26); Text(title).font(.system(size: 14)).foregroundStyle(Color.black); Spacer(); Image(systemName: "chevron.right").font(.system(size: 14)).foregroundStyle(Style.gray) }.frame(minHeight: 66).contentShape(Rectangle()) }.buttonStyle(.plain); Divider() }
 }

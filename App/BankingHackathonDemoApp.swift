@@ -1,7 +1,7 @@
 import SwiftUI
 import DemoCore
 
-@main struct BankingHackathonDemoApp: App {
+@MainActor @main struct BankingHackathonDemoApp: App {
     @State private var store: DemoStore
     init() {
         let args = ProcessInfo.processInfo.arguments
@@ -29,7 +29,7 @@ struct RootView: View {
         .sheet(isPresented: $store.showWelcome) { WelcomeView().interactiveDismissDisabled() }
         .sheet(item: $store.sheet) { sheet in DemoSheetView(sheet: sheet) }
         .alert("Check your demo payment", isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) { Button("OK") { store.error = nil } } message: { Text(store.error ?? "") }
-        .confirmationDialog("Discard this demo payment?", isPresented: $store.discard, titleVisibility: .visible) { Button("Discard payment", role: .destructive) { store.clearDraft() }; Button("Keep editing", role: .cancel) {} }
+        .confirmationDialog("Discard this demo paymentâ€¦", isPresented: $store.discard, titleVisibility: .visible) { Button("Discard payment", role: .destructive) { store.clearDraft() }; Button("Keep editing", role: .cancel) {} }
     }
 }
 struct BottomBar: View {

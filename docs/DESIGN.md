@@ -1,0 +1,30 @@
+# Reference interpretation
+
+The eight private images represent seven screens. References 6 and 8 are entrance and final states of Confirmation. All originals remain outside the repository.
+
+| Reference | Native view |
+| --- | --- |
+| 1 | AccountsHomeView |
+| 2 | RecipientDirectoryView |
+| 3 | PayTransferHubView |
+| 4 | EnterAmountView |
+| 5 | RecipientSearchView with native keyboard focus |
+| 6 | ConfirmationView entrance |
+| 7 | ReviewPaymentView |
+| 8 | ConfirmationView final state |
+
+## Shared design
+
+Style defines pale gray surfaces, a navy to blue header gradient, primary blue, gray supporting text, purple recipient badges, teal success, 20 point content insets, and 13 point card corners. Native system fonts use explicit sizes and weights corresponding to the references. Shared components include navigation headers, recipient identities, avatar badges, divided menu rows, primary buttons, and the floating rounded tab bar.
+
+The root navigation bar is hidden during the payment flow. System status bars, safe areas, and keyboards remain native. Scrollable forms and keyboard dismissal keep controls reachable on smaller phones. The application uses the light appearance.
+
+## Recorded approximations
+
+Product illustrations and specialized banking line art use SF Symbols. Recipient registration uses a simple purple glyph rather than a proprietary logo asset. Siri uses a system waveform symbol. Text wraps vary with invented name lengths and iOS font rendering. No blur or image compression is baked into the views.
+
+## State boundaries
+
+DemoCore contains exact cent parsing, validation, fixtures, searching, a value type ledger, and immutable submitted payment records. DemoStore owns root selection, typed routes, recipients, draft, selected account, local persistence, and the last submitted snapshot. Views read that store and dispatch actions. Demo dates use the injected UTC clock, shared by validation, account activity, and date sheets.
+
+Scheduled records preserve the chosen date without changing balances. Immediate payments deduct once. The asynchronous submit guard and ledger submission ID prevent duplicate records. A repeating payment records a frequency but never executes background payments.
