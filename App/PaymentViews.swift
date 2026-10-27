@@ -20,7 +20,7 @@ struct EnterAmountView: View {
                         }.padding(.top, 48).padding(.bottom, 28)
                         Text("Amount").font(.system(size: 14)).foregroundStyle(store.amountError == nil ? Style.gray : Style.error).frame(maxWidth: .infinity).id("amount-section")
                         CurrencyEntry(value: Binding(get: { store.draft?.amount ?? CurrencyInput() }, set: { store.draft?.amount = $0; store.amountError = nil }), invalidInput: { store.amountError = $0 })
-                            .frame(height: 57).padding(.top, 6).padding(.bottom, 2)
+                            .frame(height: 54).padding(.top, 4).padding(.bottom, 2)
                         Rectangle().fill(store.amountError == nil ? Style.gray.opacity(0.7) : Style.error).frame(height: 1)
                         if let error = store.amountError {
                             Label(error, systemImage: "exclamationmark.triangle").font(.system(size: 11)).foregroundStyle(Style.error)
@@ -30,7 +30,7 @@ struct EnterAmountView: View {
                         Button { store.explain("Demo payment limit", "Amounts must be positive, within the fictional account balance, and no more than the displayed demo limit.") } label: {
                             HStack(spacing: 5) { Text("Learn more"); Image(systemName: "chevron.right") }.font(.system(size: 13)).frame(maxWidth: .infinity).padding(.top, 7)
                         }
-                        Text("Message to recipient").font(.system(size: 14)).foregroundStyle(Style.gray).padding(.top, 20)
+                        Text("Message to recipient").font(.system(size: 14)).foregroundStyle(Style.gray).padding(.top, 14)
                         TextField("What's this for?", text: Binding(get: { store.draft?.message ?? "" }, set: { store.draft?.message = $0 }), prompt: Text("What's this for?").foregroundStyle(Style.gray))
                             .font(.system(size: 16)).focused($messageFocused).accessibilityIdentifier("message-field")
                             .onChange(of: store.draft?.message) { _, value in
@@ -47,16 +47,16 @@ struct EnterAmountView: View {
                                     Spacer(minLength: 1); Image(systemName: "chevron.down")
                                 }
                             }.foregroundStyle(Style.gray).padding(.vertical, 12).overlay(alignment: .bottom) { Rectangle().fill(Color(.systemGray4)).frame(height: 0.5) }
-                        }.padding(.top, 42).accessibilityIdentifier("account-picker")
+                        }.padding(.top, 26).accessibilityIdentifier("account-picker")
                         Button { dismissKeyboard(); store.refreshDay(); store.sheet = .date } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 9) { Text("Send on").font(.system(size: 13)).foregroundStyle(Style.gray); Text(store.dateLabel(draft.effectiveDate(now: store.now, calendar: store.calendar))).font(.system(size: 16)) }
                                 Spacer(); CalendarGlyph().stroke(Style.gray, lineWidth: 1.2).frame(width: 18, height: 20)
-                            }.padding(.top, 24).padding(.bottom, 12).overlay(alignment: .bottom) { Rectangle().fill(Style.gray.opacity(0.7)).frame(height: 1) }
+                            }.padding(.top, 20).padding(.bottom, 12).overlay(alignment: .bottom) { Rectangle().fill(Style.gray.opacity(0.7)).frame(height: 1) }
                         }.accessibilityIdentifier("date-picker")
                         Button("Delivery time and sending limits ⓘ") { store.explain("Delivery time and sending limits", "Payments remain on this device. Future payments are recorded as scheduled without reducing the balance. Repeating payments record a frequency and do not execute automatically.") }.font(.system(size: 13)).padding(.top, 36)
                         Toggle("Repeat payment", isOn: Binding(get: { draft.frequency != .once }, set: { enabled in dismissKeyboard(); if enabled { store.draft?.frequency = .weekly; store.sheet = .frequency } else { store.draft?.frequency = .once } }))
-                            .font(.system(size: 16)).foregroundStyle(Style.gray).tint(Style.blue).padding(.top, 24).accessibilityIdentifier("repeat-toggle")
+                            .font(.system(size: 16)).foregroundStyle(Style.gray).tint(Style.blue).padding(.top, 20).accessibilityIdentifier("repeat-toggle")
                         if draft.frequency != .once { Button("Frequency: \(draft.frequency.rawValue)") { store.sheet = .frequency }.font(.footnote).padding(.top, 8) }
                         PrimaryButton(title: "Review & send") { dismissKeyboard(); store.review() }.accessibilityIdentifier("review-send").padding(.top, 20).padding(.bottom, 26)
                     }.padding(.horizontal, 20)
