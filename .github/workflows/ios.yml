@@ -72,15 +72,15 @@ jobs:
           tail -n 15 build-device.log
       - name: Package and independently verify device IPA
         run: |
-          python3 scripts/package_ipa.py build/Device/Build/Products/Release-iphoneos/BankingHackathonDemo.app build/BankingHackathonDemo-unsigned.ipa
-          python3 scripts/verify_ipa.py build/BankingHackathonDemo-unsigned.ipa build/build-verification.json
+          python3 scripts/package_ipa.py build/Device/Build/Products/Release-iphoneos/BankingHackathonDemo.app build/ChaseDemo-unsigned.ipa
+          python3 scripts/verify_ipa.py build/ChaseDemo-unsigned.ipa build/build-verification.json
           xcrun lipo -archs build/Device/Build/Products/Release-iphoneos/BankingHackathonDemo.app/BankingHackathonDemo
           git rev-parse HEAD > build/source-commit.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: BankingHackathonDemo-unsigned
+          name: ChaseDemo-unsigned
           path: |
-            build/BankingHackathonDemo-unsigned.ipa
+            build/ChaseDemo-unsigned.ipa
             build/build-verification.json
             build/source-commit.txt
           retention-days: 3

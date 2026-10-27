@@ -1,22 +1,34 @@
-"""Generate an original geometric demo icon without using reference assets."""
-import json, struct, zlib
+"""Validate the approved supplied artwork and prebuilt opaque AppIcon sizes.
+
+The historical script name is retained for the existing workflow. It no longer
+generates replacement artwork or adds lettering.
+"""
+import hashlib
+import json
+import struct
 from pathlib import Path
-size=1024
-rows=[]
-for y in range(size):
-    row=bytearray()
-    for x in range(size):
-        roof=200<=y<=380 and abs(x-512)<=(y-180)*1.5
-        columns=420<=y<=680 and any(a<=x<=a+60 for a in [260,400,540,680])
-        base=730<=y<=785 and 210<=x<=810
-        stripe=835<=y<=865 and 350<=x<=674
-        color=(255,255,255) if roof or columns or base or stripe else (0,72+int(y/32),150+int(y/24))
-        row.extend(color)
-    rows.append(b'\0'+row)
-def chunk(kind,data): return struct.pack('>I',len(data))+kind+data+struct.pack('>I',zlib.crc32(kind+data)&0xffffffff)
-image=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',size,size,8,2,0,0,0))+chunk(b'IDAT',zlib.compress(b''.join(rows)))+chunk(b'IEND',b'')
-p=Path('App/Assets.xcassets/AppIcon.appiconset');p.mkdir(parents=True,exist_ok=True)
-(p/'AppIcon.png').write_bytes(image)
-(p/'Contents.json').write_text(json.dumps({'images':[{'filename':'AppIcon.png','idiom':'universal','platform':'ios','size':'1024x1024'}],'info':{'author':'demo','version':1}}))
-(p.parent/'Contents.json').write_text(json.dumps({'info':{'author':'demo','version':1}}))
-print('Generated original geometric app icon.')
+
+root = Path(__file__).resolve().parents[1]
+catalog = root / 'App/Assets.xcassets/AppIcon.appiconset'
+approved = json.loads((root / 'Assets/approved-icon-sha256.json').read_text())
+entries = json.loads((catalog / 'Contents.json').read_text())['images']
+assert len(entries) == 9
+for entry in entries:
+    path = catalog / entry['filename']
+    data = path.read_bytes()
+    assert data[:8] == b'\x89PNG\r\n\x1a\n'
+    width, height, depth, color = struct.unpack_from('>IIBB', data, 16)
+    expected = int(entry['size'].split('x')[0]) * int(entry['scale'][0])
+    assert (width, height) == (expected, expected)
+    assert depth == 8 and color == 2, 'App icons must be opaque RGB PNGs'
+    offset = 8
+    while offset < len(data):
+        length = struct.unpack_from('>I', data, offset)[0]
+        assert data[offset + 4:offset + 8] != b'tRNS', 'No transparent color key'
+        offset += length + 12
+    relative = path.relative_to(root).as_posix()
+    assert hashlib.sha256(data).hexdigest() == approved[relative], 'Artwork changed without approval'
+    assert entry['idiom'] == ('ios-marketing' if width == 1024 else 'iphone')
+master = root / 'Assets/IconArtwork.png'
+assert hashlib.sha256(master.read_bytes()).hexdigest() == approved['Assets/IconArtwork.png']
+print('PASS: supplied artwork and all 9 opaque AppIcon sizes match the reviewed catalog.')

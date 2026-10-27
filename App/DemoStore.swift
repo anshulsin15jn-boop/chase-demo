@@ -1,68 +1,116 @@
 import SwiftUI
 import DemoCore
 
-enum RootTab: String, CaseIterable { case accounts = "Accounts", pay = "Pay & transfer", plan = "Plan & track", more = "More"
+enum RootTab: String, CaseIterable {
+    case accounts = "Accounts", pay = "Pay & transfer", plan = "Plan & track", more = "More"
     var icon: String { switch self { case .accounts: "wallet.bifold"; case .pay: "arrow.triangle.2.circlepath.circle"; case .plan: "list.clipboard"; case .more: "line.3.horizontal" } }
 }
 enum Route: Hashable { case directory, search, amount, review, confirmation }
-enum DemoSheet: String, Identifiable { case information, add, qr, account, date, frequency, activity
+enum DemoSheet: String, Identifiable {
+    case information, add, qr, account, date, frequency, activity
     var id: String { rawValue }
 }
 @MainActor @Observable final class DemoStore {
+    var state = LocalState()
     var tab: RootTab = .accounts
     var path: [Route] = []
-    var recipients = Demo.recipients
-    var ledger = Ledger()
     var draft: Draft?
     var submitted: Payment?
     var submissionID = UUID()
     var isSubmitting = false
-    var showWelcome = true
     var sheet: DemoSheet?
-    var infoTitle = "Hackathon demonstration"
-    var infoText = "This feature is a local demonstration. No banking service is connected."
+    var infoTitle = "Independent hackathon simulation"
+    var infoText = "This feature is local to your device. No real banking service is connected."
     var directoryDue = false
     var error: String?
+    var amountError: String?
+    var onboardingError: String?
     var discard = false
-    let now: Date
+    var now: Date
+    var calendar: Calendar
     private var baseline: Draft?
-    private let storageKey = "fictional-demo-state-v1"
-    private let persists: Bool
-    struct Saved: Codable { let ledger: Ledger; let recipients: [Recipient] }
-    init(persists: Bool = true, now: Date = Demo.today) {
-        self.persists = persists; self.now = now
-        if persists, let data = UserDefaults.standard.data(forKey: storageKey), let saved = try? JSONDecoder().decode(Saved.self, from: data) { ledger = saved.ledger; recipients = saved.recipients }
+    @ObservationIgnored private let repository: LocalPersistence?
+    @ObservationIgnored private let clock: () -> Date
+    @ObservationIgnored private let calendarProvider: () -> Calendar
+    private var persistenceBlocked = false
+
+    init(repository: LocalPersistence? = LocalPersistence(), clock: @escaping () -> Date = Date.init,
+         calendarProvider: @escaping () -> Calendar = { .autoupdatingCurrent }, initialState: LocalState? = nil) {
+        self.repository = repository; self.clock = clock; self.calendarProvider = calendarProvider
+        now = clock(); calendar = calendarProvider()
+        if let initialState { state = initialState }
+        else if let repository {
+            do { state = try repository.load() }
+            catch { persistenceBlocked = true; error = "Saved demo data could not be read. It has been left untouched. Reset the demo only if you want to replace it." }
+        }
     }
+    var recipients: [Recipient] { state.recipients }
+    var ledger: Ledger { state.ledger }
+    var firstName: String { state.profile?.firstName ?? "" }
+    var needsFirstName: Bool { state.profile == nil }
     var meaningful: Bool { guard let draft else { return false }; return draft != baseline }
-    func persist() { if persists, let data = try? JSONEncoder().encode(Saved(ledger: ledger, recipients: recipients)) { UserDefaults.standard.set(data, forKey: storageKey) } }
+    func accountLabel(_ account: Account) -> String { account.displayLabel(firstName: firstName) }
+    func dateLabel(_ date: Date) -> String { LocalDay.label(date, now: now, calendar: calendar) }
+    private func save(_ candidate: LocalState) throws {
+        guard !persistenceBlocked else { throw InputError.firstName }
+        try repository?.save(candidate)
+    }
+    func completeOnboarding(_ value: String) {
+        do {
+            var candidate = state; try candidate.onboard(firstName: value); try save(candidate)
+            state = candidate; onboardingError = nil
+        } catch let issue as InputError { onboardingError = persistenceBlocked ? "Existing local data is unavailable. It has not been overwritten." : issue.rawValue }
+        catch { onboardingError = "Your name could not be saved locally. Please try again." }
+    }
+    func addRecipient(name: String, number: String, email: String) throws {
+        var candidate = state
+        try candidate.addRecipient(name: name, number: number, email: email)
+        try save(candidate); state = candidate
+    }
+    func refreshDay() {
+        now = clock(); calendar = calendarProvider()
+        draft?.refresh(now: now, calendar: calendar)
+        baseline?.refresh(now: now, calendar: calendar)
+    }
+    func selectDate(_ value: Date) { draft?.selectDate(value) }
+    func selectToday() { refreshDay(); draft?.selectToday(now: now, calendar: calendar) }
     func select(_ recipient: Recipient) {
-        if draft?.recipient.id != recipient.id { let d = Draft(recipient: recipient, date: now); draft = d; baseline = d; submissionID = UUID(); submitted = nil }
+        refreshDay()
+        if draft?.recipient.id != recipient.id {
+            let value = Draft(recipient: recipient, now: now, calendar: calendar)
+            draft = value; baseline = value; submissionID = UUID(); submitted = nil; amountError = nil
+        }
         path.removeAll(where: { $0 == .search || $0 == .amount || $0 == .review }); path.append(.amount)
     }
     func directory(due: Bool = false) { directoryDue = due; path = [.directory] }
-    func explain(_ title: String, _ body: String = "This is an offline hackathon simulation. No real account, recipient, device service, or payment is accessed.") { infoTitle = title; infoText = body; sheet = .information }
+    func explain(_ title: String, _ body: String = "This is an independent hackathon simulation. No real account, contact discovery, device service, or payment is accessed.") { infoTitle = title; infoText = body; sheet = .information }
     func cancel() { if meaningful { discard = true } else { clearDraft() } }
-    func clearDraft() { draft = nil; baseline = nil; submitted = nil; submissionID = UUID(); path = [.directory] }
-    func done() { draft = nil; baseline = nil; submitted = nil; submissionID = UUID(); path = []; tab = .pay }
-    func review() { guard let draft else { return }; do { _ = try ledger.validate(draft, now: now); path.append(.review) } catch { self.error = (error as? PaymentError)?.rawValue ?? "Check the payment details." } }
-    func send() async {
-        guard !isSubmitting, submitted == nil, let draft else { return }
-        isSubmitting = true; defer { isSubmitting = false }
-        do { try await Task.sleep(for: .milliseconds(650)); submitted = try ledger.submit(draft, id: submissionID, now: now); persist(); path = [.confirmation] }
-        catch { self.error = (error as? PaymentError)?.rawValue ?? "Submission was interrupted. Please try again." }
+    func clearDraft() { draft = nil; baseline = nil; submitted = nil; amountError = nil; submissionID = UUID(); path = [.directory] }
+    func done() { draft = nil; baseline = nil; submitted = nil; amountError = nil; submissionID = UUID(); path = []; tab = .pay }
+    private func present(_ issue: Error) {
+        if let issue = issue as? PaymentError, [.invalid, .limit, .balance].contains(issue) { amountError = issue.rawValue }
+        else { error = (issue as? PaymentError)?.rawValue ?? "Please check the payment details." }
     }
-    func reset() { ledger = Ledger(); recipients = Demo.recipients; draft = nil; baseline = nil; submitted = nil; path = []; tab = .accounts; persist() }
-    func preview(_ screen: String) {
-        showWelcome = false
-        switch screen {
-        case "hub": tab = .pay
-        case "directory": path = [.directory]
-        case "search": path = [.directory, .search]
-        case "amount", "review", "confirmation":
-            select(recipients[0]); draft?.amount = "24.50"; draft?.message = "Demo lunch"; draft?.date = Demo.calendar.date(byAdding: .day, value: 2, to: now)!
-            if screen == "review" { path = [.directory, .amount, .review] }
-            if screen == "confirmation", let draft { submitted = try? ledger.submit(draft, id: submissionID); path = [.confirmation] }
-        default: break
-        }
+    func review() {
+        refreshDay(); guard let draft, !needsFirstName else { return }
+        do { _ = try ledger.validate(draft, now: now, calendar: calendar); amountError = nil; path.append(.review) }
+        catch { present(error) }
+    }
+    func send() async {
+        guard !isSubmitting, submitted == nil, !needsFirstName else { return }
+        isSubmitting = true; defer { isSubmitting = false }
+        do {
+            try await Task.sleep(for: .milliseconds(650))
+            refreshDay(); guard let draft else { return }
+            var candidate = state
+            let payment = try candidate.ledger.submit(draft, id: submissionID, sender: firstName, now: now, calendar: calendar)
+            try save(candidate); state = candidate; submitted = payment; path = [.confirmation]
+        } catch { present(error) }
+    }
+    func reset() {
+        var candidate = LocalState(); candidate.profile = state.profile
+        persistenceBlocked = false
+        do { try save(candidate); state = candidate; draft = nil; baseline = nil; submitted = nil; amountError = nil; path = []; tab = .accounts }
+        catch { self.error = "The local demo could not be reset." }
     }
 }

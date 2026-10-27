@@ -1,65 +1,63 @@
-# Banking Hackathon Demo
+# Chase Demo
 
-A native SwiftUI banking simulation for iPhone, inspired by the private visual references. The display name is **Hackathon Demo**. The launch screen explains the project. This project is independent and is not affiliated with Chase or Zelle.
+An independent native SwiftUI hackathon simulation, not affiliated with Chase or Zelle. No real transfers, notifications, contact discovery, analytics, or banking sign in. Names and recipients entered at runtime stay in the app's local device storage.
 
-All accounts, contacts, messages, balances, and registration details are fictional. Every payment is a local simulation. The app has no networking, login, camera, Siri integration, or paid Apple capabilities.
+## Version 0.2 update
 
-## Download and install
+The app asks for a first name once, including after an update from version 0.1. Surrounding whitespace is removed; empty names are rejected. Accents, apostrophes and hyphens are supported. The existing local storage key and bundle identifier are retained, so adding the first name preserves saved recipients, balances and activity.
 
-Verified [v0.1.0 demo prerelease](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/releases/tag/v0.1.0-demo): [download the unsigned iPhone IPA](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/releases/download/v0.1.0-demo/BankingHackathonDemo-unsigned.ipa). Six model tests and three simulator UI tests passed with Xcode 26.1.1. See [verification results](docs/VERIFICATION.md).
+For a synthetic name of Avery, account labels are `AVERY CHECKING (..5020)` and `AVERY SAVINGS (..5020)`. Checking and savings remain separate accounts. The local first name is also the simulated sender identity.
 
-Open [Releases](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/releases) and select the newest hackathon prerelease. Download `BankingHackathonDemo-unsigned.ipa`. You need an iPhone with iOS 17 or later and AltStore Classic. This unsigned device IPA needs AltStore to sign it before installation.
+New payments start at **Today**, using the device's actual local calendar and time zone. The Today shortcut is a rolling default; choosing a day in the calendar is an explicit selection. Explicit dates survive navigation and clock refreshes. Foreground and significant time changes refresh the current day. Review and Send recheck the date, and an explicit date that has become past must be corrected. Existing payment dates are never rewritten.
 
-If using an [Actions build](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/actions/workflows/ios.yml), open a successful run and download `BankingHackathonDemo-unsigned` under Artifacts. Extract the ZIP on Windows and use the `.ipa` inside. Do not rename the artifact ZIP to `.ipa`.
+Every new payment starts at a real, dark `$0.00`. Number pad digits insert cents automatically: `5` is `$0.05`, `500` is `$5.00`. Backspace removes one entered digit. Leading zeros are preserved internally, and deleting all digits restores `$0.00`. Plain pasted ASCII digits are accepted. An edit containing punctuation, spaces, non-ASCII numerals or letters is rejected as a whole and leaves the value unchanged. The app guards integer overflow and validates the fictional balance and $10,000.00 sending limit before submission. Zero amount errors appear inline only after Review is pressed.
 
-### On Windows
+## Recipients
 
-Follow the [official Windows installation guide](https://faq.altstore.io/altstore-classic/how-to-install-altstore-windows). It currently specifies Apple supplied iTunes and iCloud, with a documented alternative for Microsoft Store iCloud. Download AltServer from that guide, extract its installer, install it, and run AltServer as administrator. Allow private network access when requested.
+Name only, number only, or a combination are supported. Email remains an optional separate field. At least one valid value is required. Any 9 or 10 ASCII digits are accepted for this local simulation. Phone input uses a number pad and is stored as an unformatted string, preserving leading zeros. Nine digits display as three groups of three; ten digits use the standard parenthesized area code format. No missing digit is invented.
 
-Connect and unlock the iPhone, accept computer trust, and enable WiFi sync in iTunes. Use the AltServer taskbar icon, select **Install AltStore**, and choose the connected phone. Complete Apple sign in through your local installation. Never enter Apple credentials in this app, source code, GitHub, or Actions.
+Names without contacts do not show blank contact or registration lines. Number-only recipients use the formatted number as their label and a generic avatar. Locally created recipients are not represented as registered with an external service. Repeated saves are guarded, duplicates are checked locally, and recipients persist between launches.
 
-### On iPhone
+Bundled samples and automated tests use synthetic data. Reserved numbers and example.com addresses are a fixture privacy policy, not a restriction on local runtime entry. Do not include real user data in shared screenshots or reports.
 
-Trust the developer identity under Settings > General > VPN & Device Management, or the equivalent profile management entry for your iOS version. Enable Developer Mode under Settings > Privacy & Security, then follow the device restart prompts. See the [official guide](https://faq.altstore.io/altstore-classic/how-to-install-altstore-windows) for version differences.
+## Download and install an update
 
-Download the release directly in Safari to Files, or transfer the Windows download using a file transfer method you already use. Keep the `.ipa` extension. With AltServer running and reachable, open AltStore Classic, select **My Apps**, tap **+**, and choose the IPA in Files. Complete any local AltStore prompts and wait for signing and installation. If your version exposes a Files share action for AltStore, that is another import route.
+Get the newest **Chase Demo** prerelease from [Releases](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/releases). The version 0.2 file is `ChaseDemo-unsigned.ipa`. See [version 0.2 verification](docs/VERIFICATION-0.2.md) for build status and the direct download after publication.
 
-Open **Hackathon Demo**, read the demo disclosure, and select **Enter demo**.
+For an Actions download, open a successful [build run](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/actions/workflows/ios.yml), download the `ChaseDemo-unsigned` artifact and extract its ZIP. Use the IPA inside; do not rename the outer artifact ZIP to IPA.
 
-### Refresh and updates
+The app supports iOS 17 or later. The IPA is unsigned and needs local signing through AltStore Classic/AltServer or Sideloadly. Apple credentials never belong in this app, its source, GitHub issues or Actions secrets.
 
-The official [Getting Started guide](https://faq.altstore.io/altstore-classic/your-altstore) documents seven day expiration for regular accounts, three active sideloaded apps, and **Refresh All** in My Apps. AltStore itself uses an app slot. Regular accounts also have a weekly limit of ten active [App IDs](https://faq.altstore.io/altstore-classic/app-ids). This app has no extensions. Refresh before expiry. Keep AltServer available on the same network or connect by USB, as described in the [AltServer guide](https://faq.altstore.io/altstore-classic/altserver). Paid developer accounts have different signing limits and typically longer validity; use the expiry shown by your local AltStore rather than assuming the regular account window.
+### Windows and iPhone
 
-For an update, import the new IPA using the same Apple account and app identity. Do not uninstall the old app first if you want to preserve local demo activity. The bundle identifier stays `io.hackathon.fictionalbank.chaselookalike`. AltStore performs the signing and may map this to your account. Installation and preservation of data still require testing on your iPhone.
+Follow the current [official AltStore Windows instructions](https://faq.altstore.io/altstore-classic/how-to-install-altstore-windows) or [official Sideloadly instructions](https://sideloadly.io/). AltStore's Windows guide specifies Apple supplied iTunes and iCloud, with a documented alternative for Microsoft Store iCloud. Install AltServer locally, connect and trust the unlocked phone, enable WiFi sync where required, and install AltStore from AltServer's device menu. Complete Apple sign in only through the local installer.
 
-## Use the demo
+For AltStore, place the IPA in iPhone Files, either by downloading the release in Safari or transferring the Windows download. With AltServer reachable, open AltStore Classic, use **My Apps > +**, and select the IPA. Trust the developer identity in iOS Settings under the applicable device management entry and enable Developer Mode when prompted. Labels vary with iOS; follow the linked official guide.
 
-Accounts > Send | Zelle, or Pay & transfer > Send money, opens recipients. Search, select a recipient, enter an amount and optional message, choose account and date, then review and submit. Done returns to Pay & transfer. Activity shows the immutable payment record. More > Reset demo restores fixtures and clears activity.
+For Sideloadly, import the IPA into the local Windows app, select the connected iPhone and the same signing account used for the existing installation, and start signing and installation. Keep the original app identity.
 
-The injected demo clock defaults to November 12, 2026 in UTC. Future dates create scheduled records and do not reduce balances. Repeating payments record the frequency only; there is no background transfer engine. Drafts survive back navigation in the current session. Activity and added fictional recipients persist locally between launches. Reset removes that saved demo state.
+**To preserve existing data, install over the existing app without uninstalling it. Use the same Apple/signing account and keep bundle identifier `io.hackathon.fictionalbank.chaselookalike`.** The visible name and icon change to Chase Demo. The first name is requested once, and the migration retains recipients and activity. Data preservation and installation must still be tested on the actual iPhone.
 
-New contacts are restricted to reserved 202 555 0100 through 0199 numbers or example.com email addresses. Only enter invented names.
+Regular accounts normally require refreshing before the seven day expiry and have three active app slots, including AltStore itself. See [AltStore Getting Started](https://faq.altstore.io/altstore-classic/your-altstore), [AltServer connectivity](https://faq.altstore.io/altstore-classic/altserver), and [App ID limits](https://faq.altstore.io/altstore-classic/app-ids). Paid account validity differs; use the expiry shown by the local signing tool. This app has no extensions or paid Apple capabilities.
 
-## Build responsibilities
+## Build and checks
 
-| Location | Work |
-| --- | --- |
-| Windows | Edit source, trigger workflows, download the IPA, run AltServer |
-| GitHub standard macOS runner | Run Swift tests, generate the Xcode project, run simulator UI tests, build the unsigned iPhone app |
-| iPhone | AltStore signing and installation, device trust, Developer Mode, demo use and installation testing |
+Windows is used for editing, downloading and local signing tools. GitHub's standard `macos-15` runner compiles with installed Xcode. The iPhone performs installation, trust and Developer Mode steps and runs the demo.
 
-The manual **Build and verify iPhone demo** workflow uses the standard `macos-15` runner and an installed Xcode. It generates the project with XcodeGen, compiles a Release `iphoneos` app with signing disabled, packages `Payload/BankingHackathonDemo.app`, then verifies ARM64 and Mach-O physical iOS platform metadata. Build artifacts expire after three days. No pushes automatically start duplicate builds.
+The existing manual [build workflow](.github/workflows/ios.yml) runs source privacy checks, DemoCore tests, hosted state tests and native UI tests. It validates the supplied icon catalog, generates the Xcode project, captures synthetic screens and builds a Release physical-device app with signing disabled. The verifier checks iPhoneOS metadata, ARM64 Mach-O platform 2, no executable code signature, correct icon metadata and IPA structure. Artifacts expire after three days. The separate [publication job](.github/workflows/publish.yml) alone has release write permission and verifies the successful source run and file hash before creating a new prerelease.
 
-The separate **Publish verified hackathon prerelease** workflow accepts a successful build run ID and a new tag. Only that job has release write permission. It checks the run result, source commit, IPA hash, and device metadata before publication. No signing secrets are used.
+The display name is **Chase Demo**, version **0.2.0**, build **2**. Internal Xcode target and archive folder names remain BankingHackathonDemo. The distinct bundle identifier is unchanged. No Apple signing credentials are used in CI.
 
-On a Mac with Xcode and XcodeGen, run `swift test`, `xcodegen generate`, and open the generated project. Generated Xcode projects and build outputs stay out of Git.
+On a Mac, run `swift test`, `python3 scripts/generate_icon.py`, `xcodegen generate`, and open the generated project. The historical icon script name is retained, but it only validates the committed supplied artwork and nine opaque icon sizes. It does not generate replacement artwork.
 
-## Verification and visual notes
+Production uses `Date()` and the local calendar. Deterministic clocks, synthetic onboarding and legacy migration seeds are confined to test injection and a debug-only CI harness; normal app launches do not use the fixed test date.
 
-Focused model tests cover exact cents, invalid amounts, balance and limit checks, date validation, scheduled balances, immutable snapshots, duplicate IDs, message limits, search, serialization, and reset. UI tests cover the connected flow, keyboard search, validation alerts, back navigation, cancellation, confirmation, activity, and reset. Build success is reported only after CI runs.
+## Privacy and visual notes
 
-The simulator capture script produces seven screenshots using fictional fixtures. The simulator is selected for proportions close to the references, preferring iPhone 16 Pro or 17 Pro. Native status bars and keyboards vary by iOS version. Product illustrations, banking icons, the purple registration badge, and the Siri symbol use SF Symbols or simple text approximations. The transition screenshot is implemented as an entrance animation with Reduce Motion support.
+The three update comparison screenshots and all original references remain outside Git. Only the supplied standalone icon is authorized as an app asset. A hash allowlist permits its reviewed PNG sizes; other bitmap files, renamed images, credential patterns and personal fixture contacts are rejected by the source/history check. This policy does not inspect or prohibit legitimate local runtime input.
 
-Original reference images are outside the repository. They are never app resources, workflow inputs, artifacts, or release attachments. The privacy checker inspects tracked files and reachable source history, rejects reference image files and credential patterns, and checks app contacts against synthetic formats. Its checks supplement manual review; they do not claim to detect every possible personal name.
+The 512 by 512 supplied artwork was preserved pixel for pixel in the cleaned source and resized to the required opaque AppIcon sizes, including 1024. No lettering or rounded mask was added. iOS applies its own mask. The 1024 version is an upscale and contains no invented additional detail.
 
-Real iPhone installation testing is still required even when compilation, simulator tests, and IPA verification pass.
+The recipient document and calendar icons are native vector shapes. The amount error color and underline are conditional validation styling. Other specialized banking illustrations remain documented SF Symbol approximations; native safe areas, keyboards and status indicators vary with iOS.
+
+More > Reset demo restores sample balances and recipients and clears simulated activity, while retaining the first name so onboarding is not repeated.

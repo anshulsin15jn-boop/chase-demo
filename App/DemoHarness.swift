@@ -1,0 +1,57 @@
+#if DEBUG
+import Foundation
+import DemoCore
+
+// Deterministic, synthetic state is available only in debug builds used by CI.
+@MainActor enum DemoHarness {
+    static var calendar: Calendar { var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(secondsFromGMT: 0)!; return c }
+    static var date: Date { calendar.date(from: DateComponents(year: 2026, month: 11, day: 12, hour: 12))! }
+    static func makeStore(arguments: [String]) -> DemoStore? {
+        guard arguments.contains("--ui-testing") || arguments.contains("--demo-screen") else { return nil }
+        var repository: LocalPersistence?
+        if let i = arguments.firstIndex(of: "--persistent-suite"), arguments.indices.contains(i + 1),
+           let defaults = UserDefaults(suiteName: "io.hackathon.fictionalbank.uitest." + arguments[i + 1]) {
+            repository = LocalPersistence(defaults: defaults)
+            if arguments.contains("--seed-legacy"), defaults.data(forKey: LocalPersistence.storageKey) == nil {
+                var state = LocalState()
+                let earlier = calendar.date(byAdding: .day, value: -3, to: date)!
+                var draft = Draft(recipient: Demo.recipients[0], now: earlier, calendar: calendar)
+                draft.amount = try! CurrencyInput(digits: "1250")
+                try! state.ledger.submit(draft, id: UUID(), sender: "Avery", now: earlier, calendar: calendar)
+                let local = Recipient(id: "legacy-local", name: "Jamie Vale", phoneDigits: "2025550155")
+                state.recipients.append(local)
+                var object = try! JSONSerialization.jsonObject(with: JSONEncoder().encode(state)) as! [String: Any]
+                object.removeValue(forKey: "profile")
+                object["recipients"] = state.recipients.map { ["id": $0.id, "name": $0.name, "contact": $0.contact] }
+                defaults.set(try! JSONSerialization.data(withJSONObject: object), forKey: LocalPersistence.storageKey)
+            }
+        }
+        let store = DemoStore(repository: repository, clock: { date }, calendarProvider: { calendar })
+        if let i = arguments.firstIndex(of: "--demo-screen"), arguments.indices.contains(i + 1) { preview(arguments[i + 1], store: store) }
+        return store
+    }
+    static func preview(_ screen: String, store: DemoStore) {
+        if screen == "onboarding" { return }
+        store.completeOnboarding("Avery")
+        switch screen {
+        case "hub": store.tab = .pay
+        case "directory": store.path = [.directory]
+        case "search": store.path = [.directory, .search]
+        case "add": store.path = [.directory]; store.sheet = .add
+        case "amount", "amount-error", "review", "confirmation":
+            store.select(store.recipients[0])
+            if screen == "amount-error" { store.review() }
+            if screen == "review" || screen == "confirmation" {
+                store.draft?.amount = try! CurrencyInput(digits: "2450"); store.draft?.message = "Demo lunch"
+                store.selectDate(calendar.date(byAdding: .day, value: 2, to: date)!)
+                if screen == "review" { store.path = [.directory, .amount, .review] }
+                else if let draft = store.draft {
+                    store.submitted = try! store.state.ledger.submit(draft, id: store.submissionID, sender: store.firstName, now: date, calendar: calendar)
+                    store.path = [.confirmation]
+                }
+            }
+        default: break
+        }
+    }
+}
+#endif

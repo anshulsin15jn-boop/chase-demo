@@ -26,10 +26,10 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: io.hackathon.fictionalbank.chaselookalike
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_NAME: BankingHackathonDemo
-        MARKETING_VERSION: '0.1.0'
-        CURRENT_PROJECT_VERSION: '1'
+        MARKETING_VERSION: '0.2.0'
+        CURRENT_PROJECT_VERSION: '2'
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Hackathon Demo
+        INFOPLIST_KEY_CFBundleDisplayName: Chase Demo
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.finance
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
@@ -44,11 +44,21 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
+  DemoStateTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [StateTests]
+    dependencies:
+      - target: BankingHackathonDemo
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   BankingHackathonDemo:
     build:
       targets:
         BankingHackathonDemo: all
         DemoUITests: [test]
+        DemoStateTests: [test]
     test:
-      targets: [DemoUITests]
+      targets: [DemoStateTests, DemoUITests]

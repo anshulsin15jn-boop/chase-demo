@@ -25,6 +25,6 @@ Product illustrations and specialized banking line art use SF Symbols. Recipient
 
 ## State boundaries
 
-DemoCore contains exact cent parsing, validation, fixtures, searching, a value type ledger, and immutable submitted payment records. DemoStore owns root selection, typed routes, recipients, draft, selected account, local persistence, and the last submitted snapshot. Views read that store and dispatch actions. Demo dates use the injected UTC clock, shared by validation, account activity, and date sheets.
+DemoCore contains exact integer cent input, validation, synthetic fixtures, searching, a value type ledger, optional local profile, backward-compatible persistence, and immutable submitted payment records. DemoStore owns root selection, typed routes, recipients, draft, selected account and the last submitted snapshot. Views read that store and dispatch actions. Normal launches use the actual device clock and local calendar. Tests inject deterministic dates. Default Today rolls forward; explicitly selected calendar dates do not. Foreground and significant clock changes refresh the state, and submission validates the current day again.
 
 Scheduled records preserve the chosen date without changing balances. Immediate payments deduct once. The asynchronous submit guard and ledger submission ID prevent duplicate records. A repeating payment records a frequency but never executes background payments.

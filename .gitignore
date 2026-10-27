@@ -3,6 +3,8 @@ ChaseReferences/
 references/
 private/
 *.png
+!Assets/IconArtwork.png
+!App/Assets.xcassets/AppIcon.appiconset/Icon-*.png
 *.jpg
 *.jpeg
 *.heic

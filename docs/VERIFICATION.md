@@ -1,5 +1,7 @@
 # Verified build
 
+This is the historical version 0.1 report. See [version 0.2 verification](VERIFICATION-0.2.md) for the current update.
+
 [Successful build](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/actions/runs/40459700627) and [successful publication](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/actions/runs/40460758871), October 27, 2026.
 
 Source commit: `336dbda4cbb8a6de922b54883b6b25c9afb49973`.
