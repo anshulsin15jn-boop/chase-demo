@@ -106,7 +106,7 @@ struct ConfirmationView: View {
                 ScrollView { VStack(spacing: 0) {
                     Image(systemName: "checkmark").font(.system(size: 31, weight: .semibold)).foregroundStyle(.white).frame(width: 46, height: 46).background(Style.teal, in: Circle()).scaleEffect(check ? 1 : 0.6).opacity(check ? 1 : 0).padding(.top, 26).padding(.bottom, 24)
                     VStack(spacing: 0) {
-                        Text("Your demo payment to \(payment.recipient.displayName) for \(store.dateLabel(payment.date)) is \(payment.scheduled ? "scheduled" : "complete"). This confirmation is a local simulation. No real money, emails, texts, or notifications have been sent.")
+                        Text("Your demo payment to \(payment.recipient.displayName) for \(store.dateLabel(payment)) is \(payment.scheduled ? "scheduled" : "complete"). This confirmation is a local simulation. No real money, emails, texts, or notifications have been sent.")
                             .font(.system(size: 16)).multilineTextAlignment(.center).lineSpacing(3).accessibilityIdentifier("confirmation-text")
                         Text(Demo.money(payment.cents)).font(.system(size: 36)).padding(.top, 27).padding(.bottom, 24).accessibilityIdentifier("confirmation-amount")
                         Avatar(recipient: payment.recipient, size: 52)

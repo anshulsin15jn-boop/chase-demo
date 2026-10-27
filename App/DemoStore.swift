@@ -51,6 +51,7 @@ enum DemoSheet: String, Identifiable {
     var meaningful: Bool { guard let draft else { return false }; return draft != baseline }
     func accountLabel(_ account: Account) -> String { account.displayLabel(firstName: firstName) }
     func dateLabel(_ date: Date) -> String { LocalDay.label(date, now: now, calendar: calendar) }
+    func dateLabel(_ payment: Payment) -> String { LocalDay.recordLabel(payment, now: now, calendar: calendar) }
     private func save(_ candidate: LocalState) throws {
         guard !persistenceBlocked else { throw InputError.firstName }
         try repository?.save(candidate)
@@ -72,7 +73,7 @@ enum DemoSheet: String, Identifiable {
         draft?.refresh(now: now, calendar: calendar)
         baseline?.refresh(now: now, calendar: calendar)
     }
-    func selectDate(_ value: Date) { draft?.selectDate(value) }
+    func selectDate(_ value: Date) { draft?.selectDate(value, calendar: calendar) }
     func selectToday() { refreshDay(); draft?.selectToday(now: now, calendar: calendar) }
     func select(_ recipient: Recipient) {
         refreshDay()

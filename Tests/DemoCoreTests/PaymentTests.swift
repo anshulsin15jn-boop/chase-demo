@@ -73,7 +73,7 @@ final class PaymentTests: XCTestCase {
         var value = try draft(); XCTAssertTrue(value.usesToday)
         value.refresh(now: next, calendar: calendar)
         XCTAssertEqual(value.date, calendar.startOfDay(for: next))
-        value.selectDate(calendar.startOfDay(for: now)); XCTAssertFalse(value.usesToday)
+        value.selectDate(calendar.startOfDay(for: now), calendar: calendar); XCTAssertFalse(value.usesToday)
         value.refresh(now: next, calendar: calendar)
         XCTAssertEqual(value.date, calendar.startOfDay(for: now))
         XCTAssertThrowsError(try validate(value, at: next)) { XCTAssertEqual($0 as? PaymentError, .date) }
@@ -85,6 +85,25 @@ final class PaymentTests: XCTestCase {
         value.refresh(now: calendar.date(byAdding: .day, value: 3, to: now)!, calendar: calendar)
         XCTAssertEqual(ledger.payments[0].date, payment.date)
         XCTAssertNotEqual(value.date, payment.date)
+    }
+    func testExplicitCivilDaySurvivesTimeZoneChange() throws {
+        var chicago = calendar; chicago.timeZone = TimeZone(identifier: "America/Chicago")!
+        var value = try draft(); value.selectDate(calendar.startOfDay(for: now), calendar: calendar)
+        value.refresh(now: now, calendar: chicago)
+        let effective = value.effectiveDate(now: now, calendar: chicago)
+        XCTAssertEqual(chicago.component(.day, from: effective), 12)
+        XCTAssertEqual(value.date, calendar.startOfDay(for: now))
+    }
+    func testLegacyUTCHistoricalCalendarDaySurvivesLocalFormatting() throws {
+        var ledger = Ledger()
+        let payment = try ledger.submit(draft(), id: UUID(), sender: "Avery", now: now, calendar: calendar)
+        var fields = try JSONSerialization.jsonObject(with: JSONEncoder().encode(payment)) as! [String: Any]
+        fields.removeValue(forKey: "timeZoneIdentifier")
+        let legacy = try JSONDecoder().decode(Payment.self, from: JSONSerialization.data(withJSONObject: fields))
+        var chicago = calendar; chicago.timeZone = TimeZone(identifier: "America/Chicago")!
+        let later = calendar.date(byAdding: .day, value: 3, to: now)!
+        XCTAssertEqual(LocalDay.recordLabel(legacy, now: later, calendar: chicago), "Nov 12, 2026")
+        XCTAssertEqual(legacy.date, payment.date)
     }
     func testAutomaticCurrencyDigitSequence() throws {
         var value = CurrencyInput(); XCTAssertEqual(value.formatted, "$0.00")
@@ -178,7 +197,7 @@ final class PaymentTests: XCTestCase {
     }
     func testSchedulingDoesNotDeductAndPreservesExplicitDateAndFrequency() throws {
         var ledger = Ledger(); var value = try draft(); let future = calendar.date(byAdding: .day, value: 3, to: now)!
-        value.selectDate(future); value.frequency = .monthly
+        value.selectDate(future, calendar: calendar); value.frequency = .monthly
         let payment = try ledger.submit(value, id: UUID(), sender: "Avery", now: now, calendar: calendar)
         XCTAssertTrue(payment.scheduled); XCTAssertEqual(payment.date, future); XCTAssertEqual(payment.frequency, .monthly)
         XCTAssertEqual(ledger.accounts[0].cents, 248670)

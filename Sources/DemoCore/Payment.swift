@@ -103,10 +103,21 @@ public struct CurrencyInput: Equatable, Codable, Sendable {
     public var formatted: String { Demo.money(cents) }
 }
 public enum LocalDay {
+    public static func project(_ date: Date, from timeZone: TimeZone, into calendar: Calendar) -> Date {
+        guard timeZone != calendar.timeZone else { return date }
+        var source = calendar; source.timeZone = timeZone
+        let parts = source.dateComponents([.era, .year, .month, .day, .hour, .minute, .second], from: date)
+        return calendar.date(from: parts) ?? date
+    }
     public static func label(_ date: Date, now: Date, calendar: Calendar) -> String {
         if calendar.isDate(date, inSameDayAs: now) { return "Today" }
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US"); f.calendar = calendar; f.timeZone = calendar.timeZone; f.dateFormat = "MMM d, yyyy"
         return f.string(from: date)
+    }
+    public static func recordLabel(_ payment: Payment, now: Date, calendar: Calendar) -> String {
+        // Version 0.1 records used UTC. Their stored timestamps are never changed.
+        let zone = payment.timeZoneIdentifier.flatMap(TimeZone.init(identifier:)) ?? TimeZone(secondsFromGMT: 0)!
+        return label(project(payment.date, from: zone, into: calendar), now: now, calendar: calendar)
     }
 }
 public enum Frequency: String, CaseIterable, Codable, Sendable { case once = "Once", weekly = "Weekly", monthly = "Monthly" }
@@ -117,12 +128,19 @@ public struct Draft: Equatable, Sendable {
     public var accountID = "checking"
     public private(set) var date: Date
     public private(set) var usesToday = true
+    public private(set) var selectedTimeZone: TimeZone?
     public var frequency: Frequency = .once
     public init(recipient: Recipient, now: Date, calendar: Calendar) { self.recipient = recipient; date = calendar.startOfDay(for: now) }
-    public mutating func selectDate(_ value: Date) { date = value; usesToday = false }
-    public mutating func selectToday(now: Date, calendar: Calendar) { usesToday = true; date = calendar.startOfDay(for: now) }
+    public mutating func selectDate(_ value: Date, calendar: Calendar) {
+        date = value; usesToday = false
+        selectedTimeZone = TimeZone(identifier: calendar.timeZone.identifier) ?? calendar.timeZone
+    }
+    public mutating func selectToday(now: Date, calendar: Calendar) { usesToday = true; selectedTimeZone = nil; date = calendar.startOfDay(for: now) }
     public mutating func refresh(now: Date, calendar: Calendar) { if usesToday { date = calendar.startOfDay(for: now) } }
-    public func effectiveDate(now: Date, calendar: Calendar) -> Date { usesToday ? calendar.startOfDay(for: now) : date }
+    public func effectiveDate(now: Date, calendar: Calendar) -> Date {
+        if usesToday { return calendar.startOfDay(for: now) }
+        return selectedTimeZone.map { LocalDay.project(date, from: $0, into: calendar) } ?? date
+    }
 }
 public struct Payment: Identifiable, Equatable, Codable, Sendable {
     public let id: UUID
@@ -134,6 +152,7 @@ public struct Payment: Identifiable, Equatable, Codable, Sendable {
     public let frequency: Frequency
     public let scheduled: Bool
     public let sender: String
+    public let timeZoneIdentifier: String?
 }
 public enum PaymentError: String, Error {
     case invalid = "Please tell us an amount."
@@ -191,7 +210,7 @@ public struct Ledger: Codable, Sendable {
         let index = accounts.firstIndex(where: { $0.id == draft.accountID })!
         let date = draft.effectiveDate(now: now, calendar: calendar)
         let scheduled = calendar.startOfDay(for: date) > calendar.startOfDay(for: now)
-        let payment = Payment(id: id, recipient: draft.recipient, cents: cents, message: draft.message, account: accounts[index], date: date, frequency: draft.frequency, scheduled: scheduled, sender: profile.firstName)
+        let payment = Payment(id: id, recipient: draft.recipient, cents: cents, message: draft.message, account: accounts[index], date: date, frequency: draft.frequency, scheduled: scheduled, sender: profile.firstName, timeZoneIdentifier: calendar.timeZone.identifier)
         if !scheduled { accounts[index].cents -= cents }
         payments.insert(payment, at: 0)
         return payment

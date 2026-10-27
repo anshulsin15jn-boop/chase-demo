@@ -84,7 +84,7 @@ struct ActivityList: View {
                 VStack(alignment: .leading, spacing: 7) {
                     HStack { Text(payment.recipient.displayName).font(.headline); Spacer(); Text(Demo.money(payment.cents)) }
                     if !payment.recipient.subtitle.isEmpty { Text(payment.recipient.subtitle).font(.footnote) }
-                    Text("\(payment.scheduled ? "Scheduled" : "Completed") • \(store.dateLabel(payment.date))").font(.subheadline).foregroundStyle(Style.gray)
+                    Text("\(payment.scheduled ? "Scheduled" : "Completed") • \(store.dateLabel(payment))").font(.subheadline).foregroundStyle(Style.gray)
                     Text(store.accountLabel(payment.account)).font(.footnote).foregroundStyle(Style.gray)
                     Text("Sending as \(store.firstName)").font(.footnote).foregroundStyle(Style.gray)
                     if !payment.message.isEmpty { Text(payment.message).font(.footnote).accessibilityIdentifier("activity-message") }
