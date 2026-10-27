@@ -6,6 +6,8 @@ All accounts, contacts, messages, balances, and registration details are fiction
 
 ## Download and install
 
+Verified [v0.1.0 demo prerelease](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/releases/tag/v0.1.0-demo): [download the unsigned iPhone IPA](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/releases/download/v0.1.0-demo/BankingHackathonDemo-unsigned.ipa). Six model tests and three simulator UI tests passed with Xcode 26.1.1. See [verification results](docs/VERIFICATION.md).
+
 Open [Releases](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/releases) and select the newest hackathon prerelease. Download `BankingHackathonDemo-unsigned.ipa`. You need an iPhone with iOS 17 or later and AltStore Classic. This unsigned device IPA needs AltStore to sign it before installation.
 
 If using an [Actions build](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/actions/workflows/ios.yml), open a successful run and download `BankingHackathonDemo-unsigned` under Artifacts. Extract the ZIP on Windows and use the `.ipa` inside. Do not rename the artifact ZIP to `.ipa`.
@@ -26,7 +28,7 @@ Open **Hackathon Demo**, read the demo disclosure, and select **Enter demo**.
 
 ### Refresh and updates
 
-The official [Getting Started guide](https://faq.altstore.io/altstore-classic/your-altstore) documents seven day expiration for regular accounts, three active sideloaded apps, and **Refresh All** in My Apps. AltStore itself uses an app slot. Refresh before expiry. Keep AltServer available on the same network or connect by USB, as described in the [AltServer guide](https://faq.altstore.io/altstore-classic/altserver). Paid developer accounts have different signing limits and typically longer validity; use the expiry shown by your local AltStore rather than assuming the regular account window.
+The official [Getting Started guide](https://faq.altstore.io/altstore-classic/your-altstore) documents seven day expiration for regular accounts, three active sideloaded apps, and **Refresh All** in My Apps. AltStore itself uses an app slot. Regular accounts also have a weekly limit of ten active [App IDs](https://faq.altstore.io/altstore-classic/app-ids). This app has no extensions. Refresh before expiry. Keep AltServer available on the same network or connect by USB, as described in the [AltServer guide](https://faq.altstore.io/altstore-classic/altserver). Paid developer accounts have different signing limits and typically longer validity; use the expiry shown by your local AltStore rather than assuming the regular account window.
 
 For an update, import the new IPA using the same Apple account and app identity. Do not uninstall the old app first if you want to preserve local demo activity. The bundle identifier stays `io.hackathon.fictionalbank.chaselookalike`. AltStore performs the signing and may map this to your account. Installation and preservation of data still require testing on your iPhone.
 
