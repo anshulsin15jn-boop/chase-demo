@@ -1,0 +1,26 @@
+﻿# Private visual references must never enter this repository.
+ChaseReferences/
+references/
+private/
+*.png
+*.jpg
+*.jpeg
+*.heic
+*.webp
+*.mov
+*.mp4
+# Build products and local configuration
+.DS_Store
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.ipa
+*.app/
+*.dSYM/
+.env
+.env.*
+*.p12
+*.mobileprovision
+*.cer
+*.key
