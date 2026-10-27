@@ -22,7 +22,7 @@ Bundled samples and automated tests use synthetic data. Reserved numbers and exa
 
 ## Download and install an update
 
-Get the newest **Chase Demo** prerelease from [Releases](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/releases). The version 0.2 file is `ChaseDemo-unsigned.ipa`. See [version 0.2 verification](docs/VERIFICATION-0.2.md) for build status and the direct download after publication.
+Download [ChaseDemo-unsigned.ipa, version 0.2.0](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/releases/download/v0.2.0-demo/ChaseDemo-unsigned.ipa), or open the [prerelease](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/releases/tag/v0.2.0-demo). All 36 tests passed and the published device IPA was independently verified after download. See [version 0.2 verification](docs/VERIFICATION-0.2.md) for results, privacy checks and remaining installation limitations.
 
 For an Actions download, open a successful [build run](https://github.com/anshulsin15jn-boop/chase-hackathon-demo/actions/workflows/ios.yml), download the `ChaseDemo-unsigned` artifact and extract its ZIP. Use the IPA inside; do not rename the outer artifact ZIP to IPA.
 
