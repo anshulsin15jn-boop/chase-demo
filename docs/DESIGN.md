@@ -21,7 +21,7 @@ The root navigation bar is hidden during the payment flow. System status bars, s
 
 ## Recorded approximations
 
-Product illustrations and specialized banking line art use SF Symbols. Recipient registration uses a simple purple glyph rather than a proprietary logo asset. Siri uses a system waveform symbol. Text wraps vary with invented name lengths and iOS font rendering. No blur or image compression is baked into the views.
+Product illustrations and specialized banking line art use SF Symbols. Recipient registration now uses one custom SwiftUI z shape with crossing strokes, scaled to 32 percent of its avatar and placed on a small white backing at the lower-right edge. The Siri demonstration uses a drawn multicolor orb with gradients and curved highlights, not a waveform symbol. These vectors recreate the references without embedding screenshot pixels; the Siri orb remains a visual approximation. Text wraps vary with name lengths and iOS font rendering. No image compression or accidental transition blur is baked into the views.
 
 ## State boundaries
 

@@ -1,5 +1,7 @@
 # Version 0.2 verification
 
+This is the historical version 0.2 report. See [version 0.3 verification](VERIFICATION-0.3.md) for the current update.
+
 Verified on October 27, 2026. Source commit: `36a913e02fef868477627c7085b25022648ccced`.
 
 ## Download and build evidence
