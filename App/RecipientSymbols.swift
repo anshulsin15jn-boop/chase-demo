@@ -26,8 +26,9 @@ struct SiriDemoOrb: View {
                 Circle().fill(AngularGradient(colors: [.cyan, Color(red: 0.0, green: 0.55, blue: 0.42), .pink, .purple, .blue, .cyan], center: .center, startAngle: .degrees(15), endAngle: .degrees(375)))
                 Ellipse().fill(LinearGradient(colors: [.clear, .white.opacity(0.7), .cyan.opacity(0.2)], startPoint: .top, endPoint: .bottom)).frame(width: s * 0.9, height: s * 0.39).rotationEffect(.degrees(-33))
                 Ellipse().stroke(LinearGradient(colors: [.white.opacity(0.1), .cyan.opacity(0.9), .white.opacity(0.7), .clear], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: s * 0.05).frame(width: s * 0.72, height: s * 0.90).rotationEffect(.degrees(31))
-                Ellipse().stroke(.white.opacity(0.5), lineWidth: s * 0.03).frame(width: s * 0.93, height: s * 0.56).rotationEffect(.degrees(37))
+                Ellipse().stroke(.white.opacity(0.3), lineWidth: s * 0.03).frame(width: s * 0.93, height: s * 0.56).rotationEffect(.degrees(37))
                 Circle().fill(RadialGradient(colors: [.white.opacity(0.98), .white.opacity(0.25), .clear], center: .center, startRadius: 0, endRadius: s * 0.34)).frame(width: s * 0.75, height: s * 0.75)
+                Circle().fill(RadialGradient(colors: [.clear, .clear, .black.opacity(0.28)], center: .center, startRadius: 0, endRadius: s * 0.5))
             }.clipShape(Circle()).overlay(Circle().stroke(.black.opacity(0.12), lineWidth: 0.4))
         }.accessibilityHidden(true)
     }

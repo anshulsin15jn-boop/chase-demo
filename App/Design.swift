@@ -21,7 +21,7 @@ struct Avatar: View {
             if recipient.initial.isEmpty { Image(systemName: "person").font(.system(size: size * 0.45, weight: .light)) }
             else { Text(recipient.initial).font(.system(size: size * (recipient.initial.count > 1 ? 0.38 : 0.49), weight: .light)) }
         }.foregroundStyle(Color.black).frame(width: size, height: size).background(Color(.systemGray6), in: Circle())
-            .overlay(alignment: .bottomTrailing) { if recipient.registered { ZelleDemoBadge().frame(width: size * 0.36, height: size * 0.42).offset(x: 2, y: 2) } }
+            .overlay(alignment: .bottomTrailing) { if recipient.registered { ZelleDemoBadge().frame(width: size * 0.32, height: size * 0.32).offset(x: 2, y: 2) } }
             .accessibilityElement(children: .ignore).accessibilityIdentifier("recipient-avatar")
             .accessibilityLabel(recipient.registered ? "Recipient avatar, demo Zelle badge" : "Recipient avatar")
     }

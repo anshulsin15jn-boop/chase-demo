@@ -2,7 +2,7 @@
 
 An independent native SwiftUI hackathon simulation, not affiliated with Chase or Zelle. No real transfers, notifications, contact discovery, analytics, or banking sign in. Names and recipients entered at runtime stay in the app's local device storage.
 
-## Version 0.2 update
+## Version 0.3 update
 
 Version 0.3 adds a shared demo recipient identity and a revised Confirmation screen. Created and legacy recipients default to simulated registration, Personal account and Feb 2025 activity metadata. These are presentation fixtures, not registration checks. A native vector badge is shared by every avatar, and the Siri demonstration button uses a drawn multicolor orb.
 
