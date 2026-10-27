@@ -41,7 +41,7 @@ enum DemoSheet: String, Identifiable {
         if let initialState { state = initialState }
         else if let repository {
             do { state = try repository.load() }
-            catch { persistenceBlocked = true; error = "Saved demo data could not be read. It has been left untouched. Reset the demo only if you want to replace it." }
+            catch { persistenceBlocked = true; self.error = "Saved demo data could not be read. It has been left untouched. Reset the demo only if you want to replace it." }
         }
     }
     var recipients: [Recipient] { state.recipients }

@@ -35,7 +35,12 @@ jobs:
           xcodegen --version
           python3 scripts/generate_icon.py
           xcodegen generate
+      - name: Compile native application and test bundles
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing -project BankingHackathonDemo.xcodeproj -scheme BankingHackathonDemo -destination 'generic/platform=iOS Simulator' -derivedDataPath build/Simulator CODE_SIGNING_ALLOWED=NO > build-ui.log 2>&1 || { tail -n 120 build-ui.log; exit 1; }
       - name: Select matching iPhone simulator
+        id: simulator
         run: python3 scripts/simulator.py
       - name: Prepare native keyboard and simulator
         timeout-minutes: 8
@@ -47,7 +52,7 @@ jobs:
       - name: Build and test native main flow
         run: |
           set -o pipefail
-          xcodebuild test -project BankingHackathonDemo.xcodeproj -scheme BankingHackathonDemo -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build/Simulator -resultBundlePath build/UITests.xcresult CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO > build-ui.log 2>&1 || { tail -n 160 build-ui.log; exit 1; }
+          xcodebuild test-without-building -project BankingHackathonDemo.xcodeproj -scheme BankingHackathonDemo -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build/Simulator -resultBundlePath build/UITests.xcresult CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO >> build-ui.log 2>&1 || { tail -n 160 build-ui.log; exit 1; }
           tail -n 25 build-ui.log
       - name: Export failure screenshots
         if: ${{ failure() && !cancelled() }}
@@ -63,7 +68,7 @@ jobs:
           retention-days: 3
       - name: Capture fictional demo screens
         timeout-minutes: 4
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.simulator.outcome == 'success' }}
         run: bash scripts/capture.sh
       - name: Build unsigned physical iPhone application
         run: |
