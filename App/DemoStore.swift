@@ -81,12 +81,13 @@ enum DemoSheet: String, Identifiable {
             let value = Draft(recipient: recipient, now: now, calendar: calendar)
             draft = value; baseline = value; submissionID = UUID(); submitted = nil; amountError = nil
         }
-        path.removeAll(where: { $0 == .search || $0 == .amount || $0 == .review }); path.append(.amount)
+        // Publish one complete destination path instead of two observable mutations.
+        path = path.filter { $0 != .search && $0 != .amount && $0 != .review } + [.amount]
     }
     func directory(due: Bool = false) { directoryDue = due; path = [.directory] }
     func explain(_ title: String, _ body: String = "This is an independent hackathon simulation. No real account, contact discovery, device service, or payment is accessed.") { infoTitle = title; infoText = body; sheet = .information }
     func cancel() { if meaningful { discard = true } else { clearDraft() } }
-    func clearDraft() { draft = nil; baseline = nil; submitted = nil; amountError = nil; submissionID = UUID(); path = [.directory] }
+    func clearDraft() { discard = false; draft = nil; baseline = nil; submitted = nil; amountError = nil; submissionID = UUID(); path = [.directory] }
     func done() { draft = nil; baseline = nil; submitted = nil; amountError = nil; submissionID = UUID(); path = []; tab = .pay }
     private func present(_ issue: Error) {
         if let issue = issue as? PaymentError, [.invalid, .limit, .balance].contains(issue) { amountError = issue.rawValue }
