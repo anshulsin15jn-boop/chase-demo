@@ -1,0 +1,77 @@
+name: Build and verify iPhone demo
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-demo-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Select installed Xcode
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d /Applications/Xcode_26.1.app ]; then
+            sudo xcode-select -s /Applications/Xcode_26.1.app/Contents/Developer
+          elif [ -d /Applications/Xcode_16.4.app ]; then
+            sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+          fi
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+      - name: Check source privacy
+        run: python3 scripts/privacy_check.py
+      - name: Test exact payment model
+        run: swift test
+      - name: Generate Xcode project
+        run: |
+          command -v xcodegen || brew install xcodegen
+          xcodegen --version
+          python3 scripts/generate_icon.py
+          xcodegen generate
+      - name: Select matching iPhone simulator
+        run: python3 scripts/simulator.py
+      - name: Build and test native main flow
+        run: |
+          set -o pipefail
+          xcodebuild test -project BankingHackathonDemo.xcodeproj -scheme BankingHackathonDemo -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build/Simulator -resultBundlePath build/UITests.xcresult CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO > build-ui.log 2>&1 || { tail -n 160 build-ui.log; exit 1; }
+          tail -n 25 build-ui.log
+      - name: Capture fictional demo screens
+        if: always()
+        run: bash scripts/capture.sh
+      - name: Build unsigned physical iPhone application
+        run: |
+          set -o pipefail
+          xcodebuild build -project BankingHackathonDemo.xcodeproj -scheme BankingHackathonDemo -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/Device CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' > build-device.log 2>&1 || { tail -n 120 build-device.log; exit 1; }
+          tail -n 15 build-device.log
+      - name: Package and independently verify device IPA
+        run: |
+          python3 scripts/package_ipa.py build/Device/Build/Products/Release-iphoneos/BankingHackathonDemo.app build/BankingHackathonDemo-unsigned.ipa
+          python3 scripts/verify_ipa.py build/BankingHackathonDemo-unsigned.ipa build/build-verification.json
+          xcrun lipo -archs build/Device/Build/Products/Release-iphoneos/BankingHackathonDemo.app/BankingHackathonDemo
+          git rev-parse HEAD > build/source-commit.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BankingHackathonDemo-unsigned
+          path: |
+            build/BankingHackathonDemo-unsigned.ipa
+            build/build-verification.json
+            build/source-commit.txt
+          retention-days: 3
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Fictional-demo-visual-and-test-results
+          path: |
+            build/screenshots/
+            build/UITests.xcresult/
+            build-ui.log
+            build-device.log
+          retention-days: 3

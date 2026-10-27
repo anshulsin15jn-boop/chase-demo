@@ -1,4 +1,4 @@
-﻿# Private visual references must never enter this repository.
+# Private visual references must never enter this repository.
 ChaseReferences/
 references/
 private/
@@ -24,3 +24,9 @@ xcuserdata/
 *.mobileprovision
 *.cer
 *.key
+
+.build/
+.swiftpm/
+*.xcodeproj/
+*.xcworkspace/
+artifacts/

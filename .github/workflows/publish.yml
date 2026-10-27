@@ -1,0 +1,40 @@
+name: Publish verified hackathon prerelease
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful build workflow run ID
+        required: true
+      tag:
+        description: Unique prerelease tag
+        default: v0.1.0-demo
+        required: true
+permissions:
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download only successful verified build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.run_id }}
+        run: |
+          set -euo pipefail
+          gh run view "$RUN_ID" --json conclusion,headBranch,headSha,workflowName > run.json
+          python3 -c 'import json; r=json.load(open("run.json")); assert r["conclusion"]=="success" and r["headBranch"]=="main" and r["workflowName"]=="Build and verify iPhone demo"'
+          gh run download "$RUN_ID" --name BankingHackathonDemo-unsigned --dir release
+          python3 scripts/verify_ipa.py release/BankingHackathonDemo-unsigned.ipa
+          python3 -c 'import hashlib,json,pathlib; p=pathlib.Path("release"); r=json.load(open("run.json")); assert (p/"source-commit.txt").read_text().strip()==r["headSha"]; v=json.load(open(p/"build-verification.json")); assert hashlib.sha256((p/"BankingHackathonDemo-unsigned.ipa").read_bytes()).hexdigest()==v["sha256"]'
+      - name: Publish sanitized unsigned IPA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          SHA=$(python3 -c 'import json; print(json.load(open("run.json"))["headSha"])')
+          gh release create "$TAG" release/BankingHackathonDemo-unsigned.ipa release/build-verification.json release/source-commit.txt --target "$SHA" --prerelease --title 'Banking Hackathon Demo 0.1.0' --notes-file docs/RELEASE.md
