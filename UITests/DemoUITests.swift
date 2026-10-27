@@ -66,6 +66,7 @@ final class DemoUITests: XCTestCase {
         amount.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 3)); XCTAssertEqual(amount.value as? String, "$0.00")
         amount.typeText("0005"); XCTAssertEqual(amount.value as? String, "$0.05"); keyboardDone()
         app.buttons["Cancel"].tap(); app.buttons["Discard payment"].tap(); app.buttons["recent-jordan"].tap()
+        XCTAssertTrue(amount.waitForExistence(timeout: 5))
         XCTAssertEqual(amount.value as? String, "$0.00")
     }
     func testMessageLimitAndDiscard() {

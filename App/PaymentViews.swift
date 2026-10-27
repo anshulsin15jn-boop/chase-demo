@@ -31,8 +31,11 @@ struct EnterAmountView: View {
                             HStack(spacing: 5) { Text("Learn more"); Image(systemName: "chevron.right") }.font(.system(size: 13)).frame(maxWidth: .infinity).padding(.top, 7)
                         }
                         Text("Message to recipient").font(.system(size: 14)).foregroundStyle(Style.gray).padding(.top, 20)
-                        TextField("What's this for?", text: Binding(get: { store.draft?.message ?? "" }, set: { store.draft?.message = String($0.prefix(140)) }), prompt: Text("What's this for?").foregroundStyle(Style.gray))
-                            .font(.system(size: 16)).focused($messageFocused).accessibilityIdentifier("message-field").padding(.vertical, 6)
+                        TextField("What's this for?", text: Binding(get: { store.draft?.message ?? "" }, set: { store.draft?.message = $0 }), prompt: Text("What's this for?").foregroundStyle(Style.gray))
+                            .font(.system(size: 16)).focused($messageFocused).accessibilityIdentifier("message-field")
+                            .onChange(of: store.draft?.message) { _, value in
+                                if let value, value.count > 140 { store.draft?.message = String(value.prefix(140)) }
+                            }.padding(.vertical, 6)
                         Rectangle().fill(Style.gray.opacity(0.7)).frame(height: 1)
                         Text("\(140 - draft.message.count) of 140 characters remaining.").font(.system(size: 11)).foregroundStyle(Style.gray).padding(.top, 4)
                         Button { dismissKeyboard(); store.sheet = .account } label: {
