@@ -11,8 +11,8 @@ with zipfile.ZipFile(p) as z:
     info=plistlib.loads(z.read(base+'Info.plist'))
     assert info['CFBundleIdentifier']=='io.hackathon.fictionalbank.chaselookalike'
     assert info['CFBundleDisplayName']=='Chase Demo'
-    assert info['CFBundleShortVersionString']=='0.4.0'
-    assert int(info['CFBundleVersion']) >= 4
+    assert info['CFBundleShortVersionString']=='0.4.1'
+    assert int(info['CFBundleVersion']) == 5
     assert info['CFBundlePackageType']=='APPL'
     assert info['CFBundleSupportedPlatforms']==['iPhoneOS']
     assert info['DTPlatformName']=='iphoneos'
@@ -23,6 +23,8 @@ with zipfile.ZipFile(p) as z:
     assert info['CFBundleIcons']['CFBundlePrimaryIcon']['CFBundleIconName']=='AppIcon'
     assert base+'Assets.car' in names and any(n.startswith(base+'AppIcon') and n.endswith('.png') for n in names), 'Missing compiled icon'
     binary=z.read(base+info['CFBundleExecutable'])
+    assert not any(term in binary for term in (b'DemoMessageDelivery', b'DemoMessageTransport', b'HTTPDemoMessageDelivery', b'MessagingEndpoint', b'TWILIO_', b'api.twilio.com')), 'Unexpected messaging implementation'
+    assert not any('MessagingEndpoint' in n or 'demo_sms' in n for n in names), 'Unexpected SMS configuration'
     assert struct.unpack_from('<I',binary)[0]==0xfeedfacf, 'Expected thin 64-bit Mach-O'
     _,cpu,_,kind,ncmds,_,_,_=struct.unpack_from('<8I',binary)
     assert cpu==0x0100000c and kind==2, 'Expected ARM64 executable'
