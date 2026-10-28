@@ -14,7 +14,7 @@ final class DemoUITests: XCTestCase {
     }
     func onboard() {
         let name = app.textFields["first-name"]
-        XCTAssertTrue(name.waitForExistence(timeout: 5)); name.tap(); dismissKeyboardIntro(); name.typeText("Avery")
+        XCTAssertTrue(name.waitForExistence(timeout: 5)); name.tap(); dismissKeyboardIntro(); name.typeText("Avery"); keyboardDone()
         let last = app.textFields["last-name"]; last.tap(); last.typeText("Collins"); keyboardDone()
         app.buttons["enter-demo"].tap(); XCTAssertTrue(app.buttons["send-zelle"].waitForExistence(timeout: 5))
     }

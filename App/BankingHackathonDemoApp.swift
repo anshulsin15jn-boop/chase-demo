@@ -62,7 +62,8 @@ struct OnboardingView: View {
     @State private var name = ""
     @State private var middle = ""
     @State private var last = ""
-    @FocusState private var focused: Bool
+    @FocusState private var focused: NameField?
+    private enum NameField: Hashable { case first, middle, last }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
@@ -70,19 +71,19 @@ struct OnboardingView: View {
                 Text(store.state.profile == nil ? "What’s your name?" : "Complete your name").font(.title2.weight(.medium))
                 Text("Your name stays on this device and personalizes the simulated accounts. No banking sign in is needed.").foregroundStyle(Style.gray)
                 TextField("First name", text: $name).textContentType(.givenName).textInputAutocapitalization(.words)
-                    .autocorrectionDisabled().focused($focused).padding(14)
+                    .autocorrectionDisabled().focused($focused, equals: .first).padding(14)
                     .background(Style.background, in: RoundedRectangle(cornerRadius: 8)).accessibilityIdentifier("first-name")
-                    .submitLabel(.next)
-                TextField("Middle name (optional)", text: $middle).textContentType(.middleName).textInputAutocapitalization(.words).autocorrectionDisabled().padding(14).background(Style.background, in: RoundedRectangle(cornerRadius: 8)).accessibilityIdentifier("middle-name")
-                TextField("Last name", text: $last).textContentType(.familyName).textInputAutocapitalization(.words).autocorrectionDisabled().padding(14).background(Style.background, in: RoundedRectangle(cornerRadius: 8)).accessibilityIdentifier("last-name")
+                    .submitLabel(.next).onSubmit { focused = .middle }
+                TextField("Middle name (optional)", text: $middle).textContentType(.middleName).textInputAutocapitalization(.words).autocorrectionDisabled().focused($focused, equals: .middle).padding(14).background(Style.background, in: RoundedRectangle(cornerRadius: 8)).accessibilityIdentifier("middle-name").submitLabel(.next).onSubmit { focused = .last }
+                TextField("Last name", text: $last).textContentType(.familyName).textInputAutocapitalization(.words).autocorrectionDisabled().focused($focused, equals: .last).padding(14).background(Style.background, in: RoundedRectangle(cornerRadius: 8)).accessibilityIdentifier("last-name")
                     .submitLabel(.continue).onSubmit { store.completeOnboarding(name, lastName: last, middleName: middle) }
                 if let error = store.onboardingError { Text(error).font(.footnote).foregroundStyle(Style.error).accessibilityIdentifier("onboarding-error") }
-                PrimaryButton(title: "Continue") { focused = false; UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil); store.completeOnboarding(name, lastName: last, middleName: middle) }.accessibilityIdentifier("enter-demo")
+                PrimaryButton(title: "Continue") { focused = nil; UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil); store.completeOnboarding(name, lastName: last, middleName: middle) }.accessibilityIdentifier("enter-demo")
                 Text("An independent hackathon simulation, not affiliated with Chase or Zelle. All payments and notifications are simulated. No real money moves.").font(.footnote).foregroundStyle(Style.gray)
             }.padding(28).padding(.top, 48)
         }.background(.white).environment(\.colorScheme, .light).preferredColorScheme(.light)
             .onAppear { name = store.state.profile?.firstName ?? ""; middle = store.state.profile?.middleName ?? ""; last = store.state.profile?.lastName ?? "" }
-            .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }.accessibilityIdentifier("keyboard-done") } }
+            .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = nil; UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }.accessibilityIdentifier("keyboard-done") } }
     }
 }
 struct BottomBar: View {
