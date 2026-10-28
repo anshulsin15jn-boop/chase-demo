@@ -11,8 +11,8 @@ with zipfile.ZipFile(p) as z:
     info=plistlib.loads(z.read(base+'Info.plist'))
     assert info['CFBundleIdentifier']=='io.hackathon.fictionalbank.chaselookalike'
     assert info['CFBundleDisplayName']=='Chase Demo'
-    assert info['CFBundleShortVersionString']=='0.3.0'
-    assert int(info['CFBundleVersion']) >= 3
+    assert info['CFBundleShortVersionString']=='0.4.0'
+    assert int(info['CFBundleVersion']) >= 4
     assert info['CFBundlePackageType']=='APPL'
     assert info['CFBundleSupportedPlatforms']==['iPhoneOS']
     assert info['DTPlatformName']=='iphoneos'
@@ -33,7 +33,7 @@ with zipfile.ZipFile(p) as z:
         if cmd==0x32: platforms.append(struct.unpack_from('<I',binary,cursor+8)[0])
         cursor+=size
     assert platforms==[2], 'Executable must target physical iOS, not iOS Simulator'
-    assert b'CHECKING (..5020)' in binary and b'maple@example.com' in binary, 'Expected synthetic fixtures'
+    assert b'CHECKING' in binary and b'SAVINGS' in binary and b'maple@example.com' in binary, 'Expected synthetic fixtures'
     assert not any(k.startswith('NSCamera') or 'Entitlement' in k for k in info), 'Unexpected capability'
 report={'file':p.name,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bundle_id':info['CFBundleIdentifier'],'display_name':info['CFBundleDisplayName'],'version':info['CFBundleShortVersionString'],'build':info['CFBundleVersion'],'platform':'iPhoneOS','architecture':'arm64','macho_platform':'iOS (2)','minimum_ios':info['MinimumOSVersion'],'signed':False,'app_icon':'AppIcon','archive_entries':len(names),'fixture_check':'synthetic account and example.com contact present'}
 print(json.dumps(report,indent=2))

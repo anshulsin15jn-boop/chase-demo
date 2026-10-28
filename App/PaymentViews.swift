@@ -81,7 +81,7 @@ struct ReviewPaymentView: View {
                     Text(Demo.money(draft.amount.cents)).font(.system(size: 36)).padding(.top, 8).padding(.bottom, 28).accessibilityIdentifier("review-amount")
                     Rectangle().fill(Style.background).frame(height: 14)
                     VStack(spacing: 25) {
-                        detail("Sending as", store.firstName)
+                        detail("Sending as", store.senderIdentity)
                         detail("Pay from", store.ledger.accounts.first(where: { $0.id == draft.accountID }).map(store.accountLabel) ?? "")
                         detail("Send on", store.dateLabel(draft.effectiveDate(now: store.now, calendar: store.calendar)))
                         detail("Message to recipient", draft.message.isEmpty ? "No message" : draft.message)
@@ -106,7 +106,7 @@ struct ConfirmationView: View {
         VStack(spacing: 0) {
             VStack(spacing: 3) {
                 Text("Confirmation").font(.system(size: 18, weight: .semibold))
-                Text("HACKATHON DEMO").font(.system(size: 12)).foregroundStyle(Style.gray)
+                Color.clear.frame(height: 14).accessibilityHidden(true)
             }.frame(maxWidth: .infinity).frame(height: 54).background(Style.background)
             if let payment = store.submitted {
                 let copy = ConfirmationContent(payment: payment)
@@ -126,7 +126,8 @@ struct ConfirmationView: View {
                         }.padding(.horizontal, 20).frame(minHeight: geometry.size.height, alignment: .top)
                     }
                 }
-                PrimaryButton(title: "Done") { store.done() }.accessibilityIdentifier("confirmation-done").padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 26)
+                PrimaryButton(title: "Done") { store.done() }.accessibilityIdentifier("confirmation-done").padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 6)
+                Text("Local simulation. No money or messages are sent.").font(.system(size: 10)).foregroundStyle(Style.gray).frame(height: 16).padding(.bottom, 4).accessibilityIdentifier("confirmation-demo-notice")
             }
         }.background(.white).task {
             if reduceMotion { check = true; content = true }

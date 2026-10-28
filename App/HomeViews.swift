@@ -11,7 +11,7 @@ struct AccountsHomeView: View {
                     Button { store.explain("Open a demo account") } label: { Image(systemName: "rectangle.stack.badge.plus").font(.system(size: 21)) }
                     Button { store.explain("Search", "Search is simulated here. Use Pay & transfer to search fictional recipients.") } label: { Text("What are you looking for?").font(.system(size: 14)).foregroundStyle(Style.gray).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 14).padding(.vertical, 7).overlay(Capsule().stroke(Style.gray, lineWidth: 0.7)) }
                     Button { store.explain("Messages") } label: { Image(systemName: "bubble.left.and.bubble.right.fill") }
-                    Button { store.explain("Profile", "Simulated sender: \(store.firstName). Your name stays on this device.") } label: { Image(systemName: "person.crop.circle").font(.system(size: 22)) }
+                    Button { store.sheet = .profile } label: { Image(systemName: "person.crop.circle").font(.system(size: 22)) }
                 }.foregroundStyle(Style.gray).padding(.top, 14).padding(.bottom, 26)
                 ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: 8) { quick("+", width: 58) { store.explain("Quick actions") }; quick("Send | Zelle®") { store.directory() }; quick("Deposit checks") { store.explain("Deposit checks") }; quick("Pay bills") { store.directory(due: true) } }.padding(.vertical, 2) }.padding(.bottom, 30)
                 HStack { Text("Accounts").font(.system(size: 21, weight: .medium)); Spacer(); Button { store.explain("Account options") } label: { Image(systemName: "ellipsis.circle").font(.system(size: 20)).foregroundStyle(Style.gray) } }.padding(.bottom, 18)
@@ -20,9 +20,9 @@ struct AccountsHomeView: View {
                     ForEach(store.ledger.accounts) { account in
                         VStack(alignment: .leading, spacing: 14) {
                             Button { store.explain("Demo account", "No real account is linked. The displayed balance is simulated.") } label: {
-                                HStack { Text(store.accountLabel(account)).font(.system(size: 12)); Image(systemName: "chevron.right").font(.system(size: 10)); Spacer() }.foregroundStyle(Color.black)
+                                HStack { Text(store.accountLabel(account)).font(.system(size: 12)).accessibilityIdentifier("account-label-\(account.id)"); Image(systemName: "chevron.right").font(.system(size: 10)); Spacer() }.foregroundStyle(Color.black)
                             }
-                            VStack(alignment: .trailing, spacing: 2) { Text(Demo.money(account.cents)).font(.system(size: 30)); Text("Available balance").font(.system(size: 11)).foregroundStyle(Style.gray) }.frame(maxWidth: .infinity, alignment: .trailing)
+                            VStack(alignment: .trailing, spacing: 2) { Text(Demo.money(account.cents)).font(.system(size: 30)).accessibilityIdentifier("account-balance-\(account.id)"); Text("Available balance").font(.system(size: 11)).foregroundStyle(Style.gray) }.frame(maxWidth: .infinity, alignment: .trailing)
                         }.padding(16)
                         if account.id != store.ledger.accounts.last?.id { Divider() }
                     }

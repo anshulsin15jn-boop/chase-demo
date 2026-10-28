@@ -2,15 +2,21 @@
 
 An independent native SwiftUI hackathon simulation, not affiliated with Chase or Zelle. No real transfers, notifications, contact discovery, analytics, or banking sign in. Names and recipients entered at runtime stay in the app's local device storage.
 
-## Version 0.3 update
+## Version 0.4 update
+
+Onboarding requires separate first and last names, with an optional middle name. Each field is trimmed and supports normal Unicode names, apostrophes and hyphens. Existing first-name-only profiles complete their last name once; existing accounts, recipients and activity are retained. More > Personal details (also the Accounts profile icon) edits the names locally. Current labels and sender identity use the complete uppercase name. Historical payments retain their saved sender and account label.
+
+A newly initialized profile receives checking between $1,000.00 and $3,000.00 and savings between $2,000.00 and $4,000.00, independently sampled in integer cents. Distinct four-digit suffixes are generated and stored once, including leading zeros. Profile edits and relaunches do not regenerate accounts. Existing balances are preserved; missing current-account suffixes are assigned once during local migration. Historical account snapshots are never reassigned. Reset restores this profile's saved starting accounts and clears demo activity while retaining its name and suffixes. Deterministic samples remain confined to tests/debug capture setup and the inaccessible pre-onboarding state.
+
+The gray HACKATHON DEMO header subtitle is removed while retaining the Confirmation title's typography and position. A small footer identifies the screen as a local simulation. Messaging has [architecture only](docs/MESSAGING.md): an immutable, clearly labeled simulation payload and a disabled transport interface. There is no provider, networking, credentials, SMS UI or sending action. See [version 0.4 verification](docs/VERIFICATION-0.4.md) for build status.
 
 Version 0.3 adds a shared demo recipient identity and a revised Confirmation screen. Created and legacy recipients default to simulated registration, Personal account and Feb 2025 activity metadata. These are presentation fixtures, not registration checks. A native vector badge is shared by every avatar, and the Siri demonstration button uses a drawn multicolor orb.
 
 Confirmation uses the immutable submitted payment's full uppercase recipient name, selected calendar date and exact amount. Its reference-style notification paragraph is demonstration interface copy only; no messages or money are sent. The entry row continues to show Today when appropriate. See [version 0.3 verification](docs/VERIFICATION-0.3.md) for the update's build and release status.
 
-The app asks for a first name once, including after an update from version 0.1. Surrounding whitespace is removed; empty names are rejected. Accents, apostrophes and hyphens are supported. The existing local storage key and bundle identifier are retained, so adding the first name preserves saved recipients, balances and activity.
+The existing local storage key and bundle identifier are retained. First-name-only users are prompted for the missing last name after the update, without resetting their local state. Runtime names are never logged, transmitted or included in builds.
 
-For a synthetic name of Avery, account labels are `AVERY CHECKING (..5020)` and `AVERY SAVINGS (..5020)`. Checking and savings remain separate accounts. The local first name is also the simulated sender identity.
+For a synthetic full name of Avery Lane Collins and sample suffixes, labels could be `AVERY LANE COLLINS CHECKING (..0007)` and `AVERY LANE COLLINS SAVINGS (..1842)`. Checking and savings remain separate accounts. These suffix examples are not production defaults.
 
 New payments start at **Today**, using the device's actual local calendar and time zone. The Today shortcut is a rolling default; choosing a day in the calendar is an explicit selection. Explicit calendar days survive navigation, clock refreshes and time-zone changes. Foreground and significant time changes refresh the current day. Review and Send recheck the date, and an explicit date that has become past must be corrected. Existing payment timestamps are never rewritten, and legacy UTC records retain their original displayed calendar day.
 
@@ -52,7 +58,7 @@ Windows is used for editing, downloading and local signing tools. GitHub's stand
 
 The existing manual [build workflow](.github/workflows/ios.yml) runs source privacy checks, DemoCore tests, hosted state tests and native UI tests. It validates the supplied icon catalog, generates the Xcode project, captures synthetic screens and builds a Release physical-device app with signing disabled. The verifier checks iPhoneOS metadata, ARM64 Mach-O platform 2, no executable code signature, correct icon metadata and IPA structure. Artifacts expire after three days. The separate [publication job](.github/workflows/publish.yml) alone has release write permission and verifies the successful source run and file hash before creating a new prerelease.
 
-The display name is **Chase Demo**, version **0.3.0**, build **3**. Internal Xcode target and archive folder names remain BankingHackathonDemo. The distinct bundle identifier is unchanged. No Apple signing credentials are used in CI.
+The display name is **Chase Demo**, version **0.4.0**, build **4**. Internal Xcode target and archive folder names remain BankingHackathonDemo. The distinct bundle identifier is unchanged. No Apple signing credentials are used in CI.
 
 On a Mac, run `swift test`, `python3 scripts/generate_icon.py`, `xcodegen generate`, and open the generated project. The historical icon script name is retained, but it only validates the committed supplied artwork and nine opaque icon sizes. It does not generate replacement artwork.
 
@@ -66,4 +72,4 @@ The 512 by 512 supplied artwork was preserved pixel for pixel in the cleaned sou
 
 The recipient document and calendar icons are native vector shapes. The amount error color and underline are conditional validation styling. Other specialized banking illustrations remain documented SF Symbol approximations; native safe areas, keyboards and status indicators vary with iOS.
 
-More > Reset demo restores sample balances and recipients and clears simulated activity, while retaining the first name so onboarding is not repeated.
+More > Reset demo restores the profile's saved starting balances and sample recipients and clears simulated activity, while retaining the saved name and suffixes.

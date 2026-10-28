@@ -16,14 +16,14 @@ final class PaymentTests: XCTestCase {
     }
     func testFirstNameTrimmingAndNormalNames() throws {
         for name in ["Avery", "Élodie", "Anne-Marie", "D'Arcy", "O’Neil"] {
-            XCTAssertEqual(try LocalProfile(firstName: " \n" + name + " \t").firstName, name)
+            XCTAssertEqual(try LocalProfile(firstName: " \n" + name + " \t", lastName: "Collins").firstName, name)
         }
-        for empty in ["", " ", "\t\n"] { XCTAssertThrowsError(try LocalProfile(firstName: empty)) }
+        for empty in ["", " ", "\t\n"] { XCTAssertThrowsError(try LocalProfile(firstName: empty, lastName: "Collins")) }
     }
     func testOnboardingAndRecipientPersistence() throws {
         try isolated { repository, _ in
             var state = try repository.load(); XCTAssertNil(state.profile)
-            try state.onboard(firstName: "  Avery  ")
+            try state.onboard(firstName: "  Avery  ", lastName: "Collins")
             try state.addRecipient(name: "Jamie Vale", number: "")
             try state.addRecipient(name: "", number: "000000000")
             try repository.save(state)
@@ -35,7 +35,7 @@ final class PaymentTests: XCTestCase {
     }
     func testLegacyMigrationPreservesActivityBalancesRecipientsAndDates() throws {
         try isolated { repository, defaults in
-            var old = LocalState()
+            var old = LocalState(accountsInitialized: true)
             let original = try old.ledger.submit(draft("1250"), id: UUID(), sender: "Avery", now: now, calendar: calendar)
             old.recipients.append(Recipient(id: "legacy-local", name: "Jamie Vale", phoneDigits: "2025550155"))
             var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(old)) as! [String: Any]
@@ -47,7 +47,7 @@ final class PaymentTests: XCTestCase {
             XCTAssertEqual(migrated.recipients.last?.phoneDigits, "2025550155")
             XCTAssertEqual(migrated.ledger.accounts[0].cents, 247420)
             XCTAssertEqual(migrated.ledger.payments.first?.date, original.date)
-            try migrated.onboard(firstName: "Avery"); try repository.save(migrated)
+            try migrated.onboard(firstName: "Avery", lastName: "Collins"); try repository.save(migrated)
             let reloaded = try repository.load()
             XCTAssertEqual(reloaded.ledger.payments, migrated.ledger.payments)
             XCTAssertEqual(reloaded.ledger.accounts, migrated.ledger.accounts)
@@ -57,7 +57,7 @@ final class PaymentTests: XCTestCase {
     }
     func testPersonalizedAccountsKeepSeparateTypesAndTwoPeriods() {
         XCTAssertEqual(Demo.accounts[0].displayLabel(firstName: "Avery"), "AVERY CHECKING (..5020)")
-        XCTAssertEqual(Demo.accounts[1].displayLabel(firstName: "Avery"), "AVERY SAVINGS (..5020)")
+        XCTAssertEqual(Demo.accounts[1].displayLabel(firstName: "Avery"), "AVERY SAVINGS (..6841)")
         XCTAssertEqual(Demo.accounts[0].displayLabel(firstName: "Élodie-Anne"), "ÉLODIE-ANNE CHECKING (..5020)")
     }
     func testTodayFormattingAtLocalBoundary() {
@@ -218,7 +218,7 @@ final class PaymentTests: XCTestCase {
         }
     }
     func testLegacyFalseRegistrationDefaultsMigrateWithoutLosingData() throws {
-        var state = LocalState(); try state.onboard(firstName: "Avery")
+        var state = LocalState(accountsInitialized: true); try state.onboard(firstName: "Avery", lastName: "Collins")
         let recipient = try state.addRecipient(name: "Jamie Vale", number: "2025550155")
         let payment = try state.ledger.submit(draft("500", recipient: recipient), id: UUID(), sender: "Avery", now: now, calendar: calendar)
         var object = try JSONSerialization.jsonObject(with: JSONEncoder().encode(state)) as! [String: Any]

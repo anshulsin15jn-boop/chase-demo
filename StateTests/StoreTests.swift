@@ -6,8 +6,8 @@ final class StoreTests: XCTestCase {
     var calendar: Calendar { var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(secondsFromGMT: 0)!; return c }
     var date: Date { ISO8601DateFormatter().date(from: "2026-11-12T12:00:00Z")! }
     @MainActor func store(clock: @escaping () -> Date, calendar: @escaping () -> Calendar) -> DemoStore {
-        let store = DemoStore(repository: nil, clock: clock, calendarProvider: calendar)
-        store.completeOnboarding("Avery"); store.select(Demo.recipients[0]); return store
+        let store = DemoStore(repository: nil, clock: clock, calendarProvider: calendar, initialState: LocalState(accountsInitialized: true))
+        store.completeOnboarding("Avery", lastName: "Collins"); store.select(Demo.recipients[0]); return store
     }
     @MainActor func testInlineErrorOnlyAfterReviewAndNewDraftStartsAtZero() throws {
         let day = date, cal = calendar
@@ -54,8 +54,8 @@ final class StoreTests: XCTestCase {
         value.draft?.amount = try CurrencyInput(digits: "500"); value.review()
         now = cal.date(byAdding: .day, value: 1, to: now)!
         await value.send()
-        XCTAssertEqual(value.submitted?.date, cal.startOfDay(for: now)); XCTAssertEqual(value.submitted?.sender, "Avery")
-        XCTAssertEqual(value.accountLabel(value.submitted!.account), "AVERY CHECKING (..5020)")
+        XCTAssertEqual(value.submitted?.date, cal.startOfDay(for: now)); XCTAssertEqual(value.submitted?.sender, "Avery Collins")
+        XCTAssertEqual(value.accountLabel(value.submitted!.account), "AVERY COLLINS CHECKING (..5020)")
     }
     @MainActor func testConcurrentSubmissionRecordsExactlyOnePayment() async throws {
         let day = date, cal = calendar
@@ -82,5 +82,18 @@ final class StoreTests: XCTestCase {
         value.draft?.amount = try CurrencyInput(digits: "5000"); value.selectDate(future); value.review(); value.path.removeLast()
         XCTAssertEqual(value.draft?.amount.cents, 5000); XCTAssertEqual(value.draft?.date, future)
         XCTAssertFalse(value.draft!.usesToday)
+    }
+    @MainActor func testEditingNameKeepsAccountsDraftAndPaymentSnapshots() async throws {
+        let day = date, cal = calendar
+        let value = store(clock: { day }, calendar: { cal })
+        let suffixes = value.ledger.accounts.map(\.suffix)
+        value.draft?.amount = try CurrencyInput(digits: "500"); await value.send()
+        let submitted = value.submitted!
+        try value.updateProfile(firstName: "Élodie", lastName: "O'Neil", middleName: "Anne")
+        XCTAssertEqual(value.senderIdentity, "ÉLODIE ANNE O'NEIL")
+        XCTAssertEqual(value.ledger.accounts.map(\.suffix), suffixes)
+        XCTAssertEqual(value.submitted, submitted); XCTAssertEqual(value.ledger.payments, [submitted])
+        XCTAssertEqual(submitted.sender, "Avery Collins"); XCTAssertEqual(submitted.account.label, "AVERY COLLINS CHECKING (..5020)")
+        XCTAssertEqual(value.draft?.amount.cents, 500)
     }
 }

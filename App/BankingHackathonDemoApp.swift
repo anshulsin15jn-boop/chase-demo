@@ -45,7 +45,7 @@ struct RootView: View {
                 }.toolbar(.hidden, for: .navigationBar).navigationBarBackButtonHidden()
             }.toolbar(.hidden, for: .navigationBar)
         }
-        .fullScreenCover(isPresented: Binding(get: { store.needsFirstName }, set: { _ in })) { OnboardingView().interactiveDismissDisabled() }
+        .fullScreenCover(isPresented: Binding(get: { store.needsFirstName }, set: { _ in })) { NavigationStack { OnboardingView().toolbar(.hidden, for: .navigationBar) }.interactiveDismissDisabled() }
         .sheet(item: $store.sheet) { DemoSheetView(sheet: $0) }
         .alert("Check your demo payment", isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
             Button("OK") { store.error = nil }
@@ -60,22 +60,29 @@ struct RootView: View {
 struct OnboardingView: View {
     @Environment(DemoStore.self) private var store
     @State private var name = ""
+    @State private var middle = ""
+    @State private var last = ""
     @FocusState private var focused: Bool
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 Text("Chase Demo").font(.largeTitle.bold())
-                Text("What’s your first name?").font(.title2.weight(.medium))
+                Text(store.state.profile == nil ? "What’s your name?" : "Complete your name").font(.title2.weight(.medium))
                 Text("Your name stays on this device and personalizes the simulated accounts. No banking sign in is needed.").foregroundStyle(Style.gray)
                 TextField("First name", text: $name).textContentType(.givenName).textInputAutocapitalization(.words)
                     .autocorrectionDisabled().focused($focused).padding(14)
                     .background(Style.background, in: RoundedRectangle(cornerRadius: 8)).accessibilityIdentifier("first-name")
-                    .submitLabel(.continue).onSubmit { store.completeOnboarding(name) }
+                    .submitLabel(.next)
+                TextField("Middle name (optional)", text: $middle).textContentType(.middleName).textInputAutocapitalization(.words).autocorrectionDisabled().padding(14).background(Style.background, in: RoundedRectangle(cornerRadius: 8)).accessibilityIdentifier("middle-name")
+                TextField("Last name", text: $last).textContentType(.familyName).textInputAutocapitalization(.words).autocorrectionDisabled().padding(14).background(Style.background, in: RoundedRectangle(cornerRadius: 8)).accessibilityIdentifier("last-name")
+                    .submitLabel(.continue).onSubmit { store.completeOnboarding(name, lastName: last, middleName: middle) }
                 if let error = store.onboardingError { Text(error).font(.footnote).foregroundStyle(Style.error).accessibilityIdentifier("onboarding-error") }
-                PrimaryButton(title: "Continue") { focused = false; store.completeOnboarding(name) }.accessibilityIdentifier("enter-demo")
+                PrimaryButton(title: "Continue") { focused = false; UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil); store.completeOnboarding(name, lastName: last, middleName: middle) }.accessibilityIdentifier("enter-demo")
                 Text("An independent hackathon simulation, not affiliated with Chase or Zelle. All payments and notifications are simulated. No real money moves.").font(.footnote).foregroundStyle(Style.gray)
             }.padding(28).padding(.top, 48)
         }.background(.white).environment(\.colorScheme, .light).preferredColorScheme(.light)
+            .onAppear { name = store.state.profile?.firstName ?? ""; middle = store.state.profile?.middleName ?? ""; last = store.state.profile?.lastName ?? "" }
+            .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }.accessibilityIdentifier("keyboard-done") } }
     }
 }
 struct BottomBar: View {
@@ -100,8 +107,9 @@ struct MoreView: View {
             Text("More").font(.largeTitle.bold()); Text("Chase Demo").font(.title2)
             Text("An independent hackathon simulation, not affiliated with Chase or Zelle. Names, recipients and activity stay on this device. No real payments, notifications, contact discovery or analytics.").foregroundStyle(Style.gray)
             MenuRow(title: "Simulated activity", icon: "list.bullet.rectangle") { store.sheet = .activity }
+            MenuRow(title: "Personal details", icon: "person.crop.circle") { store.sheet = .profile }
             Button("Reset demo", role: .destructive) { reset = true }.accessibilityIdentifier("reset-demo")
-            Text("Reset restores sample recipients and balances, clears activity, and keeps your saved first name.").font(.footnote).foregroundStyle(Style.gray)
+            Text("Reset restores sample recipients and your saved starting balances, clears activity, and keeps your name and account suffixes.").font(.footnote).foregroundStyle(Style.gray)
             Spacer()
         }.padding(20).confirmationDialog("Restore sample recipients and clear simulated activity?", isPresented: $reset, titleVisibility: .visible) {
             Button("Reset demo now", role: .destructive) { store.reset() }

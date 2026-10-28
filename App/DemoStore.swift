@@ -7,7 +7,7 @@ enum RootTab: String, CaseIterable {
 }
 enum Route: Hashable { case directory, search, amount, review, confirmation }
 enum DemoSheet: String, Identifiable {
-    case information, add, qr, account, date, frequency, activity
+    case information, add, qr, account, date, frequency, activity, profile
     var id: String { rawValue }
 }
 @MainActor @Observable final class DemoStore {
@@ -47,21 +47,28 @@ enum DemoSheet: String, Identifiable {
     var recipients: [Recipient] { state.recipients }
     var ledger: Ledger { state.ledger }
     var firstName: String { state.profile?.firstName ?? "" }
-    var needsFirstName: Bool { state.profile == nil }
+    var fullName: String { state.profile?.fullName ?? "" }
+    var senderIdentity: String { fullName.uppercased() }
+    var needsFirstName: Bool { state.profile?.isComplete != true }
     var meaningful: Bool { guard let draft else { return false }; return draft != baseline }
-    func accountLabel(_ account: Account) -> String { account.displayLabel(firstName: firstName) }
+    func accountLabel(_ account: Account) -> String { account.displayLabel(firstName: fullName) }
     func dateLabel(_ date: Date) -> String { LocalDay.label(date, now: now, calendar: calendar) }
     func dateLabel(_ payment: Payment) -> String { LocalDay.recordLabel(payment, now: now, calendar: calendar) }
     private func save(_ candidate: LocalState) throws {
         guard !persistenceBlocked else { throw InputError.firstName }
         try repository?.save(candidate)
     }
-    func completeOnboarding(_ value: String) {
+    func completeOnboarding(_ value: String, lastName: String, middleName: String = "") {
         do {
-            var candidate = state; try candidate.onboard(firstName: value); try save(candidate)
+            var candidate = state; try candidate.onboard(firstName: value, lastName: lastName, middleName: middleName); try save(candidate)
             state = candidate; onboardingError = nil
         } catch let issue as InputError { onboardingError = persistenceBlocked ? "Existing local data is unavailable. It has not been overwritten." : issue.rawValue }
         catch { onboardingError = "Your name could not be saved locally. Please try again." }
+    }
+    func updateProfile(firstName: String, lastName: String, middleName: String) throws {
+        var candidate = state
+        try candidate.onboard(firstName: firstName, lastName: lastName, middleName: middleName)
+        try save(candidate); state = candidate
     }
     func addRecipient(name: String, number: String, email: String) throws {
         var candidate = state
@@ -105,12 +112,12 @@ enum DemoSheet: String, Identifiable {
             try await Task.sleep(for: .milliseconds(650))
             refreshDay(); guard let draft else { return }
             var candidate = state
-            let payment = try candidate.ledger.submit(draft, id: submissionID, sender: firstName, now: now, calendar: calendar)
+            let payment = try candidate.ledger.submit(draft, id: submissionID, sender: fullName, now: now, calendar: calendar)
             try save(candidate); state = candidate; submitted = payment; path = [.confirmation]
         } catch { present(error) }
     }
     func reset() {
-        var candidate = LocalState(); candidate.profile = state.profile
+        var candidate = state; candidate.resetDemo()
         persistenceBlocked = false
         do { try save(candidate); state = candidate; draft = nil; baseline = nil; submitted = nil; amountError = nil; path = []; tab = .accounts }
         catch { self.error = "The local demo could not be reset." }

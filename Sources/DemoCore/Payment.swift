@@ -2,6 +2,7 @@ import Foundation
 
 public enum InputError: String, Error {
     case firstName = "Please enter your first name."
+    case lastName = "Please enter your last name."
     case emptyRecipient = "Enter a name, a 9 or 10 digit number, or an email address."
     case phone = "Enter 9 or 10 digits using 0–9 only."
     case email = "Enter a valid email address, or leave email empty."
@@ -11,10 +12,24 @@ public enum InputError: String, Error {
 }
 public struct LocalProfile: Codable, Equatable, Sendable {
     public let firstName: String
-    public init(firstName: String) throws {
+    public let middleName: String
+    public let lastName: String
+    public var fullName: String { [firstName, middleName, lastName].filter { !$0.isEmpty }.joined(separator: " ") }
+    public var isComplete: Bool { !firstName.isEmpty && !lastName.isEmpty }
+    public init(firstName: String, lastName: String, middleName: String = "") throws {
         let value = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else { throw InputError.firstName }
+        let last = lastName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !last.isEmpty else { throw InputError.lastName }
         self.firstName = value
+        self.lastName = last; self.middleName = middleName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    enum CodingKeys: String, CodingKey { case firstName, middleName, lastName }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        firstName = try c.decode(String.self, forKey: .firstName).trimmingCharacters(in: .whitespacesAndNewlines)
+        middleName = (try c.decodeIfPresent(String.self, forKey: .middleName) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        lastName = (try c.decodeIfPresent(String.self, forKey: .lastName) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 public enum PhoneNumber {
@@ -100,9 +115,21 @@ public struct Account: Identifiable, Hashable, Codable, Sendable {
     // Retained for decoding old snapshots. Visible labels derive from the device's local profile.
     public let label: String
     public var cents: Int
+    public let suffix: String?
     public var type: String { id == "savings" ? "SAVINGS" : "CHECKING" }
-    public init(id: String, label: String, cents: Int) { self.id = id; self.label = label; self.cents = cents }
-    public func displayLabel(firstName: String) -> String { "\(firstName.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()) \(type) (..5020)" }
+    public var displaySuffix: String { suffix ?? String(label.filter { $0.isASCII && $0.isNumber }.suffix(4)) }
+    public init(id: String, label: String, cents: Int, suffix: String? = nil) { self.id = id; self.label = label; self.cents = cents; self.suffix = suffix }
+    public func displayLabel(firstName: String) -> String { "\(firstName.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()) \(type) (..\(displaySuffix))" }
+    public func snapshot(ownerName: String) -> Account { Account(id: id, label: displayLabel(firstName: ownerName), cents: cents, suffix: suffix) }
+}
+public enum AccountInitialization {
+    public static func suffix(_ number: Int) -> String { String(format: "%04d", number) }
+    public static func generate(draw: (ClosedRange<Int>) -> Int = { Int.random(in: $0) }) -> [Account] {
+        let checking = draw(100_000...300_000), savings = draw(200_000...400_000)
+        let first = draw(0...9999), other = draw(0...9998)
+        let second = other >= first ? other + 1 : other
+        return [Account(id: "checking", label: "CHECKING", cents: checking, suffix: suffix(first)), Account(id: "savings", label: "SAVINGS", cents: savings, suffix: suffix(second))]
+    }
 }
 public struct CurrencyInput: Equatable, Codable, Sendable {
     public private(set) var digits = ""
@@ -211,7 +238,9 @@ public enum PaymentError: String, Error {
 }
 public enum Demo {
     public static let limit = 1_000_000
-    public static let accounts = [Account(id: "checking", label: "CHECKING (..5020)", cents: 248_670), Account(id: "savings", label: "SAVINGS (..5020)", cents: 612_540)]
+    // Deterministic sample accounts for tests and the not-yet-onboarded state.
+    // A new local profile replaces these with persisted randomized accounts.
+    public static let accounts = [Account(id: "checking", label: "CHECKING (..5020)", cents: 248_670, suffix: "5020"), Account(id: "savings", label: "SAVINGS (..6841)", cents: 312_540, suffix: "6841")]
     public static let recipients = [
         Recipient(id: "jordan", name: "Jordan Ellis", phoneDigits: "2025550146", registered: true),
         Recipient(id: "riley", name: "Riley Chen", phoneDigits: "2025550112", registered: true),
@@ -238,7 +267,7 @@ public enum Demo {
 public struct Ledger: Codable, Sendable {
     public var accounts = Demo.accounts
     public private(set) var payments: [Payment] = []
-    public init() {}
+    public init(accounts: [Account] = Demo.accounts) { self.accounts = accounts }
     public func validate(_ draft: Draft, now: Date, calendar: Calendar) throws -> Int {
         let cents = draft.amount.cents
         guard cents > 0 else { throw PaymentError.invalid }
@@ -251,12 +280,13 @@ public struct Ledger: Codable, Sendable {
     }
     @discardableResult public mutating func submit(_ draft: Draft, id: UUID, sender: String, now: Date, calendar: Calendar) throws -> Payment {
         guard !payments.contains(where: { $0.id == id }) else { throw PaymentError.duplicate }
-        let profile = try LocalProfile(firstName: sender)
+        let senderName = sender.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !senderName.isEmpty else { throw InputError.firstName }
         let cents = try validate(draft, now: now, calendar: calendar)
         let index = accounts.firstIndex(where: { $0.id == draft.accountID })!
         let date = draft.effectiveDate(now: now, calendar: calendar)
         let scheduled = calendar.startOfDay(for: date) > calendar.startOfDay(for: now)
-        let payment = Payment(id: id, recipient: draft.recipient, cents: cents, message: draft.message, account: accounts[index], date: date, frequency: draft.frequency, scheduled: scheduled, sender: profile.firstName, timeZoneIdentifier: calendar.timeZone.identifier)
+        let payment = Payment(id: id, recipient: draft.recipient, cents: cents, message: draft.message, account: accounts[index].snapshot(ownerName: senderName), date: date, frequency: draft.frequency, scheduled: scheduled, sender: senderName, timeZoneIdentifier: calendar.timeZone.identifier)
         if !scheduled { accounts[index].cents -= cents }
         payments.insert(payment, at: 0)
         return payment
@@ -266,8 +296,43 @@ public struct LocalState: Codable, Sendable {
     public var ledger = Ledger()
     public var recipients = Demo.recipients
     public var profile: LocalProfile?
-    public init() {}
-    public mutating func onboard(firstName: String) throws { profile = try LocalProfile(firstName: firstName) }
+    public private(set) var accountsInitialized: Bool
+    public private(set) var startingAccounts: [Account]?
+    public init(accountsInitialized: Bool = false) { self.accountsInitialized = accountsInitialized }
+    enum CodingKeys: String, CodingKey { case ledger, recipients, profile, accountsInitialized, startingAccounts }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        ledger = try c.decode(Ledger.self, forKey: .ledger); recipients = try c.decode([Recipient].self, forKey: .recipients)
+        profile = try c.decodeIfPresent(LocalProfile.self, forKey: .profile)
+        // Any previously persisted state is an existing installation, even before onboarding.
+        accountsInitialized = try c.decodeIfPresent(Bool.self, forKey: .accountsInitialized) ?? true
+        startingAccounts = try c.decodeIfPresent([Account].self, forKey: .startingAccounts)
+    }
+    @discardableResult public mutating func prepareAccounts() -> Bool {
+        guard accountsInitialized else { return false }
+        var used = Set<String>(), changed = false
+        for index in ledger.accounts.indices {
+            let account = ledger.accounts[index]
+            if let suffix = account.suffix, suffix.count == 4, PhoneNumber.isASCII(suffix), !used.contains(suffix) { used.insert(suffix); continue }
+            let options = (0...9999).map(AccountInitialization.suffix).filter { !used.contains($0) }
+            let suffix = options.randomElement()!
+            ledger.accounts[index] = Account(id: account.id, label: account.label, cents: account.cents, suffix: suffix)
+            used.insert(suffix); changed = true
+        }
+        if startingAccounts == nil { startingAccounts = ledger.accounts; changed = true }
+        return changed
+    }
+    public mutating func onboard(firstName: String, lastName: String, middleName: String = "", draw: (ClosedRange<Int>) -> Int = { Int.random(in: $0) }) throws {
+        let value = try LocalProfile(firstName: firstName, lastName: lastName, middleName: middleName)
+        if !accountsInitialized {
+            ledger.accounts = AccountInitialization.generate(draw: draw); accountsInitialized = true
+            startingAccounts = ledger.accounts
+        }
+        _ = prepareAccounts(); profile = value
+    }
+    public mutating func resetDemo() {
+        ledger = Ledger(accounts: startingAccounts ?? ledger.accounts); recipients = Demo.recipients
+    }
     @discardableResult public mutating func addRecipient(name: String, number: String, email: String = "") throws -> Recipient {
         let value = try Recipient.create(name: name, number: number, email: email)
         guard !recipients.contains(where: {
@@ -284,7 +349,9 @@ public final class LocalPersistence {
     public init(defaults: UserDefaults = .standard) { self.defaults = defaults }
     public func load() throws -> LocalState {
         guard let data = defaults.data(forKey: Self.storageKey) else { return LocalState() }
-        return try JSONDecoder().decode(LocalState.self, from: data)
+        var state = try JSONDecoder().decode(LocalState.self, from: data)
+        if state.prepareAccounts() { try save(state) }
+        return state
     }
     public func save(_ state: LocalState) throws { defaults.set(try JSONEncoder().encode(state), forKey: Self.storageKey) }
 }

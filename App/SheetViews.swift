@@ -11,6 +11,7 @@ struct DemoSheetView: View {
                 switch sheet {
                 case .information: ScrollView { VStack(alignment: .leading, spacing: 20) { Text(store.infoTitle).font(.title2.bold()); Text(store.infoText); Text("Independent hackathon simulation").font(.footnote).foregroundStyle(Style.gray) }.padding(24) }.navigationTitle("Demo information")
                 case .add: AddRecipientView()
+                case .profile: ProfileSettingsView()
                 case .qr: VStack(spacing: 24) {
                     Image(systemName: "qrcode.viewfinder").font(.system(size: 120, weight: .ultraLight)); Text("Simulated QR scanner").font(.title2)
                     Text("No camera access is requested. Select the sample code to use a demonstration recipient.").multilineTextAlignment(.center)
@@ -85,8 +86,8 @@ struct ActivityList: View {
                     HStack { Text(payment.recipient.displayName).font(.headline); Spacer(); Text(Demo.money(payment.cents)) }
                     if !payment.recipient.subtitle.isEmpty { Text(payment.recipient.subtitle).font(.footnote) }
                     Text("\(payment.scheduled ? "Scheduled" : "Completed") • \(store.dateLabel(payment))").font(.subheadline).foregroundStyle(Style.gray)
-                    Text(store.accountLabel(payment.account)).font(.footnote).foregroundStyle(Style.gray)
-                    Text("Sending as \(store.firstName)").font(.footnote).foregroundStyle(Style.gray)
+                    Text(payment.account.label).font(.footnote).foregroundStyle(Style.gray)
+                    Text("Sending as \(payment.sender.uppercased())").font(.footnote).foregroundStyle(Style.gray)
                     if !payment.message.isEmpty { Text(payment.message).font(.footnote).accessibilityIdentifier("activity-message") }
                     if payment.frequency != .once { Text("\(payment.frequency.rawValue) • demo only").font(.footnote) }
                 }.accessibilityElement(children: .contain).accessibilityIdentifier("activity-\(payment.id)")

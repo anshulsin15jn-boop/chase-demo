@@ -15,6 +15,7 @@ final class DemoUITests: XCTestCase {
     func onboard() {
         let name = app.textFields["first-name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5)); name.tap(); dismissKeyboardIntro(); name.typeText("Avery")
+        let last = app.textFields["last-name"]; last.tap(); last.typeText("Collins"); keyboardDone()
         app.buttons["enter-demo"].tap(); XCTAssertTrue(app.buttons["send-zelle"].waitForExistence(timeout: 5))
     }
     func keyboardDone() { app.buttons.matching(identifier: "keyboard-done").firstMatch.tap() }
@@ -26,12 +27,16 @@ final class DemoUITests: XCTestCase {
         app.launchArguments = ["--ui-testing", "--persistent-suite", suite, "--seed-legacy"]; app.launch()
         XCTAssertTrue(app.textFields["first-name"].waitForExistence(timeout: 5))
         app.buttons["enter-demo"].tap(); XCTAssertTrue(app.staticTexts["onboarding-error"].exists)
-        let name = app.textFields["first-name"]; name.tap(); dismissKeyboardIntro(); name.typeText("  Avery  "); app.buttons["enter-demo"].tap()
+        XCTAssertEqual(app.textFields["first-name"].value as? String, "Avery")
+        let last = app.textFields["last-name"]; last.tap(); dismissKeyboardIntro(); last.typeText("  Collins  "); keyboardDone(); app.buttons["enter-demo"].tap()
         XCTAssertTrue(app.buttons["send-zelle"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["AVERY CHECKING (..5020)"].exists); XCTAssertTrue(app.staticTexts["AVERY SAVINGS (..5020)"].exists)
+        let checking = app.staticTexts["account-label-checking"].label
+        let savings = app.staticTexts["account-label-savings"].label
+        XCTAssertTrue(checking.hasPrefix("AVERY COLLINS CHECKING (..")); XCTAssertTrue(savings.hasPrefix("AVERY COLLINS SAVINGS (.."))
         app.buttons["tab-More"].tap(); app.buttons["Simulated activity"].tap(); XCTAssertTrue(app.staticTexts["$12.50"].waitForExistence(timeout: 5)); app.buttons["Close"].tap()
         app.terminate(); app.launch()
         XCTAssertTrue(app.buttons["send-zelle"].waitForExistence(timeout: 5)); XCTAssertFalse(app.textFields["first-name"].exists)
+        XCTAssertEqual(app.staticTexts["account-label-checking"].label, checking); XCTAssertEqual(app.staticTexts["account-label-savings"].label, savings)
         app.buttons["send-zelle"].tap(); app.buttons["recipient-search"].tap()
         let search = app.textFields["search-field"]; XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); dismissKeyboardIntro(); search.typeText("Jamie Vale")
         XCTAssertTrue(app.buttons["recipient-legacy-local"].waitForExistence(timeout: 5))
@@ -47,7 +52,7 @@ final class DemoUITests: XCTestCase {
         amount.tap(); dismissKeyboardIntro(); amount.typeText("2450"); keyboardDone()
         let message = app.textFields["message-field"]; message.tap(); message.typeText("Demo lunch"); keyboardDone()
         app.swipeUp(); app.buttons["review-send"].tap()
-        XCTAssertTrue(app.buttons["send-now"].waitForExistence(timeout: 5)); XCTAssertTrue(app.staticTexts["Avery"].exists); XCTAssertTrue(app.staticTexts["Today"].exists)
+        XCTAssertTrue(app.buttons["send-now"].waitForExistence(timeout: 5)); XCTAssertTrue(app.staticTexts["AVERY COLLINS"].exists); XCTAssertTrue(app.staticTexts["Today"].exists)
         app.buttons["Back"].tap(); XCTAssertEqual(amount.value as? String, "$24.50")
         app.buttons["Cancel"].tap(); app.buttons["Keep editing"].tap(); app.swipeUp(); app.buttons["review-send"].tap(); app.buttons["send-now"].tap()
         XCTAssertTrue(app.buttons["confirmation-done"].waitForExistence(timeout: 5)); XCTAssertEqual(app.staticTexts["confirmation-amount"].label, "$24.50")
@@ -84,9 +89,9 @@ final class DemoUITests: XCTestCase {
         app.terminate(); app.launchArguments = ["--ui-testing", "--demo-screen", "amount"]; app.launch()
         let amount = app.textFields["amount-field"]; amount.tap(); dismissKeyboardIntro(); amount.typeText("2450"); keyboardDone()
         app.swipeUp(); app.buttons["date-picker"].tap(); app.buttons["In 2 days"].tap(); app.buttons["Use selected date"].tap()
-        app.buttons["account-picker"].tap(); app.buttons.containing(.staticText, identifier: "AVERY SAVINGS (..5020)").firstMatch.tap()
+        app.buttons["account-picker"].tap(); app.buttons.containing(.staticText, identifier: "AVERY COLLINS SAVINGS (..6841)").firstMatch.tap()
         app.switches["repeat-toggle"].tap(); app.buttons["Monthly"].tap(); app.swipeUp(); app.buttons["review-send"].tap()
-        XCTAssertTrue(app.staticTexts["Nov 14, 2026"].exists); XCTAssertTrue(app.staticTexts["Monthly"].exists); XCTAssertTrue(app.staticTexts["AVERY SAVINGS (..5020)"].exists)
+        XCTAssertTrue(app.staticTexts["Nov 14, 2026"].exists); XCTAssertTrue(app.staticTexts["Monthly"].exists); XCTAssertTrue(app.staticTexts["AVERY COLLINS SAVINGS (..6841)"].exists)
         app.buttons["Back"].tap(); XCTAssertTrue(app.buttons["date-picker"].label.contains("Nov 14, 2026")); app.swipeUp(); app.buttons["review-send"].tap(); app.buttons["send-now"].doubleTap()
         XCTAssertTrue(app.buttons["confirmation-done"].waitForExistence(timeout: 5)); XCTAssertTrue(app.staticTexts["confirmation-text"].label.contains("Nov 14, 2026"))
         app.buttons["confirmation-done"].tap(); app.buttons["See activity"].tap(); XCTAssertTrue(app.navigationBars["Demo activity"].waitForExistence(timeout: 5))
@@ -133,5 +138,26 @@ final class DemoUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["recipient-error"].waitForExistence(timeout: 5))
         let number = app.textFields["new-number"]; number.tap(); dismissKeyboardIntro(); number.typeText("123"); keyboardDone(); app.buttons["save-recipient"].tap()
         XCTAssertTrue(app.staticTexts["recipient-error"].label.contains("9 or 10 digits"))
+    }
+    func testPersonalDetailsPersistWithoutRegeneratingAccounts() {
+        app.terminate(); app.launchArguments = ["--ui-testing", "--persistent-suite", UUID().uuidString]; app.launch()
+        onboard()
+        let checking = app.staticTexts["account-label-checking"].label
+        let savings = app.staticTexts["account-label-savings"].label
+        let balance = app.staticTexts["account-balance-checking"].label
+        app.buttons["tab-More"].tap(); app.buttons["Personal details"].staticTexts["Personal details"].tap()
+        XCTAssertTrue(app.textFields["profile-first-name"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.textFields["profile-first-name"].value as? String, "Avery")
+        XCTAssertEqual(app.textFields["profile-last-name"].value as? String, "Collins")
+        let middle = app.textFields["profile-middle-name"]; middle.tap(); middle.typeText("Lane"); keyboardDone(); app.buttons["save-profile"].tap()
+        XCTAssertTrue(app.buttons["save-profile"].waitForNonExistence(timeout: 5)); app.buttons["tab-Accounts"].tap()
+        let updated = app.staticTexts["account-label-checking"].label
+        XCTAssertEqual(updated, checking.replacingOccurrences(of: "AVERY COLLINS", with: "AVERY LANE COLLINS"))
+        XCTAssertEqual(app.staticTexts["account-label-savings"].label, savings.replacingOccurrences(of: "AVERY COLLINS", with: "AVERY LANE COLLINS"))
+        XCTAssertEqual(app.staticTexts["account-balance-checking"].label, balance)
+        app.terminate(); app.launch()
+        XCTAssertTrue(app.buttons["send-zelle"].waitForExistence(timeout: 5)); XCTAssertFalse(app.textFields["last-name"].exists)
+        XCTAssertEqual(app.staticTexts["account-label-checking"].label, updated)
+        XCTAssertEqual(app.staticTexts["account-balance-checking"].label, balance)
     }
 }
