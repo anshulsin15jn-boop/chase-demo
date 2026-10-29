@@ -28,6 +28,7 @@ struct RootView: View {
             Group {
                 switch store.tab {
                 case .accounts: AccountsHomeView()
+                case .transactions: TransactionsView()
                 case .pay: PayTransferHubView()
                 case .plan: VStack { ContentUnavailableView("Plan & track", systemImage: "chart.bar", description: Text("Your local demo goals start here.")); Button("Explore demo planning") { store.explain("Plan & track") } }
                 case .more: MoreView()
@@ -92,8 +93,8 @@ struct BottomBar: View {
         HStack(spacing: 0) {
             ForEach(RootTab.allCases, id: \.self) { tab in
                 Button { store.tab = tab } label: {
-                    VStack(spacing: 4) { Image(systemName: tab.icon).font(.system(size: 23)); Text(tab.rawValue).font(.system(size: 10)) }
-                        .frame(maxWidth: .infinity).frame(height: 58).foregroundStyle(store.tab == tab ? Style.blue : Style.gray)
+                    VStack(spacing: 3) { Image(systemName: tab.icon).font(.system(size: 20)); Text(tab.rawValue).font(.system(size: 9)) }
+                        .frame(maxWidth: .infinity).frame(height: 50).foregroundStyle(store.tab == tab ? Style.blue : Style.gray)
                 }.accessibilityIdentifier("tab-\(tab.rawValue)")
             }
         }.padding(.horizontal, 6).background(.white, in: Capsule()).shadow(color: .black.opacity(0.04), radius: 12, y: 5)

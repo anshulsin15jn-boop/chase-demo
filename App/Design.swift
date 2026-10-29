@@ -38,9 +38,9 @@ struct NavHeader: View {
     var cancel: (() -> Void)?
     var body: some View {
         ZStack {
-            Text(title).font(.system(size: 18, weight: .semibold)).foregroundStyle(Color.black).lineLimit(1).padding(.horizontal, 68)
+            Text(title).font(.system(size: 16, weight: .semibold)).foregroundStyle(Color.black).lineLimit(1).padding(.horizontal, 68)
             HStack { if let back { Button(action: back) { Image(systemName: "chevron.left").font(.system(size: 22, weight: .medium)).frame(width: 44, height: 48) }.accessibilityLabel("Back") }; Spacer(); if let cancel { Button("Cancel", action: cancel).font(.system(size: 16, weight: .medium)).padding(.trailing, 20) } }
-        }.frame(height: 54).foregroundStyle(Style.blue).background(Style.background)
+        }.frame(height: 48).foregroundStyle(Style.blue).background(Style.background)
     }
 }
 struct Identity: View {
@@ -111,5 +111,5 @@ struct MenuRow: View {
     let title: String
     let icon: String
     let action: () -> Void
-    var body: some View { Button(action: action) { HStack(spacing: 14) { Image(systemName: icon).font(.system(size: 23, weight: .light)).foregroundStyle(Style.gray).frame(width: 26); Text(title).font(.system(size: 14)).foregroundStyle(Color.black); Spacer(); Image(systemName: "chevron.right").font(.system(size: 14)).foregroundStyle(Style.gray) }.frame(minHeight: 66).contentShape(Rectangle()) }.buttonStyle(.plain); Divider() }
+    var body: some View { Button(action: action) { HStack(spacing: 14) { Image(systemName: icon).font(.system(size: 23, weight: .light)).foregroundStyle(Style.gray).frame(width: 26); Text(title).font(.system(size: 14)).foregroundStyle(Color.black); Spacer(); Image(systemName: "chevron.right").font(.system(size: 14)).foregroundStyle(Style.gray) }.frame(minHeight: 56).contentShape(Rectangle()) }.buttonStyle(.plain); Divider() }
 }

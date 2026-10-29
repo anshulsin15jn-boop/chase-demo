@@ -21,6 +21,25 @@ final class DemoUITests: XCTestCase {
     func keyboardDone() { app.buttons.matching(identifier: "keyboard-done").firstMatch.tap() }
     func enterJordan() { app.buttons["send-zelle"].tap(); app.buttons["recent-jordan"].tap() }
 
+    func testTransactionsSearchDetailsAndAccountSelection() {
+        onboard()
+        app.buttons["tab-Transactions"].tap()
+        XCTAssertTrue(app.buttons["transaction-sample-checking-0"].waitForExistence(timeout: 5))
+        app.buttons["transaction-sample-checking-0"].tap()
+        XCTAssertTrue(app.staticTexts["Transaction details"].waitForExistence(timeout: 5))
+        app.buttons["Done"].tap()
+        let search = app.textFields["transaction-search"]
+        search.tap(); dismissKeyboardIntro(); search.typeText("AMAZON")
+        XCTAssertTrue(app.buttons["transaction-sample-checking-2"].exists)
+        XCTAssertFalse(app.buttons["transaction-sample-checking-0"].exists)
+        app.buttons["Clear search"].tap()
+        app.swipeDown()
+        app.buttons["transaction-account"].tap()
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "SAVINGS")).firstMatch.tap()
+        XCTAssertTrue(app.buttons["transaction-sample-savings-0"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["transaction-sample-checking-0"].exists)
+    }
+
     func testFirstNameMigrationAndPersistence() {
         app.terminate()
         let suite = UUID().uuidString
