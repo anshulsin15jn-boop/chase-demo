@@ -67,7 +67,7 @@ struct TransactionsView: View {
                         Label("Sort by : \(recentFirst ? "Recent" : "Oldest")", systemImage: "arrow.up.arrow.down")
                             .font(.system(size: 12, weight: .medium))
                     }.accessibilityIdentifier("transaction-sort")
-                }.padding(.horizontal, 16).frame(height: 50).background(TransactionPalette.chrome)
+                }.padding(.horizontal, 16).frame(height: 54).background(TransactionPalette.chrome)
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(Array(filtered.enumerated()), id: \.element.id) { index, item in
@@ -141,7 +141,7 @@ struct TransactionsView: View {
             }.accessibilityIdentifier("transaction-account")
             Divider()
             searchBar
-        }.padding(16).background(.white, in: RoundedRectangle(cornerRadius: 7))
+        }.padding(.horizontal, 16).padding(.vertical, 20).background(.white, in: RoundedRectangle(cornerRadius: 7))
             .overlay(RoundedRectangle(cornerRadius: 7).stroke(TransactionPalette.line, lineWidth: 0.7))
             .padding(.horizontal, 12).padding(.bottom, 4).background(TransactionPalette.chrome)
     }
@@ -188,7 +188,7 @@ private enum TransactionPalette {
     static let primary = Color.black
     static let secondary = Style.gray
     static let blue = Style.blue
-    static let debit = Color(red: 0.72, green: 0.17, blue: 0.20)
+    static let debit = Color(red: 0.90, green: 0, blue: 0)
 }
 
 private struct TransactionRow: View {
@@ -226,7 +226,7 @@ private struct TransactionRow: View {
                 Spacer(minLength: 0)
             }.padding(.top, 19)
         }.padding(.leading, 16).padding(.trailing, isZelle ? 36 : 16)
-            .frame(minHeight: isZelle ? (preview ? 108 : 96) : 88)
+            .frame(minHeight: isZelle ? (preview ? 108 : 96) : 76)
             .overlay(alignment: .bottom) { TransactionPalette.line.frame(height: 0.5).padding(.leading, 16) }
             .contentShape(Rectangle())
     }
@@ -239,7 +239,7 @@ private struct TransactionMark: View {
     let incoming: Bool
     var body: some View {
         ZStack {
-            Circle().fill(title == "UBER EATS" ? Color(red: 0, green: 0.75, blue: 0.39) : title == "AMAZON MARKETPLACE" ? .white : TransactionPalette.chrome)
+            Circle().fill(title == "UBER EATS" ? Color(red: 0, green: 0.75, blue: 0.39) : .white)
             if title == "UBER EATS" {
                 Text("Uber\nEats").font(.system(size: 16, weight: .semibold)).tracking(-1).lineSpacing(-4).foregroundStyle(.black)
             } else if title == "AMAZON MARKETPLACE" {
@@ -247,11 +247,25 @@ private struct TransactionMark: View {
                     Text("amazon").font(.system(size: 9, weight: .bold)).foregroundStyle(.black)
                     Text("⌣").font(.system(size: 22, weight: .bold)).foregroundStyle(.orange)
                 }
+            } else if title.contains("ZELLE") && !incoming {
+                ZellePersonOutline().stroke(TransactionPalette.secondary, lineWidth: 1.1).frame(width: 24, height: 24)
             } else {
-                Image(systemName: title.contains("ZELLE") ? (incoming ? "dollarsign.arrow.circlepath" : "person.crop.circle") : symbol)
+                Image(systemName: title.contains("ZELLE") ? "dollarsign.arrow.circlepath" : symbol)
                     .font(.system(size: 23, weight: .ultraLight)).foregroundStyle(TransactionPalette.secondary)
             }
         }.frame(width: 46, height: 46).overlay(Circle().stroke(TransactionPalette.line, lineWidth: 1))
             .accessibilityHidden(true)
+    }
+}
+
+private struct ZellePersonOutline: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.addEllipse(in: rect.insetBy(dx: 1, dy: 1))
+        p.addEllipse(in: CGRect(x: rect.width * 0.36, y: rect.height * 0.22, width: rect.width * 0.28, height: rect.height * 0.29))
+        p.move(to: CGPoint(x: rect.width * 0.22, y: rect.height * 0.79))
+        p.addCurve(to: CGPoint(x: rect.width * 0.78, y: rect.height * 0.79), control1: CGPoint(x: rect.width * 0.22, y: rect.height * 0.45), control2: CGPoint(x: rect.width * 0.78, y: rect.height * 0.45))
+        p.closeSubpath()
+        return p
     }
 }
