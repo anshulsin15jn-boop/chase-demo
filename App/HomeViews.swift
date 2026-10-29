@@ -19,7 +19,7 @@ struct AccountsHomeView: View {
                     HStack { Text("Bank accounts (\(store.ledger.accounts.count))").font(.system(size: 12)); Spacer() }.padding(12).frame(height: 42).foregroundStyle(.white).background(Style.gradient)
                     ForEach(store.ledger.accounts) { account in
                         VStack(alignment: .leading, spacing: 10) {
-                            Button { store.transactionAccountID = account.id; store.tab = .transactions } label: {
+                            Button { store.transactionAccountID = account.id; store.path.append(.transactions) } label: {
                                 HStack { Text(store.accountLabel(account)).font(.system(size: 12)).accessibilityIdentifier("account-label-\(account.id)"); Image(systemName: "chevron.right").font(.system(size: 10)); Spacer() }.foregroundStyle(Color.black)
                             }
                             VStack(alignment: .trailing, spacing: 2) { Text(Demo.money(account.cents)).font(.system(size: 27)).accessibilityIdentifier("account-balance-\(account.id)"); Text("Available balance").font(.system(size: 11)).foregroundStyle(Style.gray) }.frame(maxWidth: .infinity, alignment: .trailing)

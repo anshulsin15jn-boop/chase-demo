@@ -42,59 +42,43 @@ struct TransactionsView: View {
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return account?.cents ?? 0 }
         return (account?.cents ?? 0) - items.prefix(index).filter { !$0.scheduled }.reduce(0) { $0 + $1.cents }
     }
+    @State private var searching = false
+    @FocusState private var searchFocused: Bool
+
     var body: some View {
         VStack(spacing: 0) {
-            NavHeader(title: "Transactions", back: { store.tab = .accounts })
-            HStack {
-                Menu {
-                    ForEach(store.ledger.accounts) { value in
-                        Button(store.accountLabel(value)) { accountID = value.id }
-                    }
-                } label: {
-                    HStack { Text(account.map { store.accountLabel($0) } ?? "Select account").lineLimit(1); Spacer(); Image(systemName: "chevron.down") }
-                        .font(.system(size: 12)).padding(10).background(.white, in: RoundedRectangle(cornerRadius: 5))
-                }.accessibilityIdentifier("transaction-account")
-                Image(systemName: "magnifyingglass").foregroundStyle(Style.blue)
-            }.padding(.horizontal, 16).padding(.bottom, 8)
-            HStack {
-                Image(systemName: "magnifyingglass").foregroundStyle(Style.gray)
-                TextField("Search transactions", text: $search).font(.system(size: 14)).autocorrectionDisabled().accessibilityIdentifier("transaction-search")
-                if !search.isEmpty { Button { search = "" } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel("Clear search") }
-            }.padding(10).background(.white, in: RoundedRectangle(cornerRadius: 6)).padding(.horizontal, 16)
-            Picker("Transaction type", selection: $filter) { ForEach(["All", "Money in", "Money out"], id: \.self) { Text($0) } }.pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 10)
+            header
+            accountBar
+            if searching { searchBar }
             ScrollView {
                 LazyVStack(spacing: 0) {
                     ForEach(Array(filtered.enumerated()), id: \.element.id) { index, item in
                         if index == 0 || !store.calendar.isDate(filtered[index - 1].date, inSameDayAs: item.date) {
-                            Text(store.dateLabel(item.date)).font(.system(size: 11)).foregroundStyle(Style.gray).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.vertical, 10).background(Style.background)
+                            Text(store.dateLabel(item.date))
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(TransactionPalette.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 16).frame(height: 48)
+                                .background(TransactionPalette.chrome)
                         }
                         Button { selected = item } label: {
-                            HStack(spacing: 12) {
-                                Image(systemName: item.symbol).font(.system(size: 20, weight: .light)).foregroundStyle(item.title.contains("ZELLE") ? Style.purple : Style.blue).frame(width: 40, height: 40).background(Style.background, in: Circle())
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack(alignment: .top) {
-                                        Text(item.title).font(.system(size: 13, weight: .medium)).multilineTextAlignment(.leading)
-                                        Spacer(minLength: 6)
-                                        Text((item.cents < 0 ? "-" : "+") + Demo.money(abs(item.cents))).font(.system(size: 13)).foregroundStyle(item.cents < 0 ? Style.error : Style.blue)
-                                    }
-                                    Text(item.scheduled ? "Scheduled · \(item.subtitle)" : item.subtitle).font(.system(size: 11)).foregroundStyle(Style.gray)
-                                    if !item.scheduled { Text(Demo.money(balance(after: item))).font(.system(size: 11)).foregroundStyle(Style.gray) }
-                                }
-                                Image(systemName: "chevron.right").font(.system(size: 11)).foregroundStyle(Style.gray)
-                            }.foregroundStyle(Color.black).padding(.horizontal, 16).padding(.vertical, 13).contentShape(Rectangle())
+                            TransactionRow(item: item, balance: balance(after: item))
                         }.buttonStyle(.plain).accessibilityIdentifier("transaction-\(item.id)")
-                        Divider().padding(.leading, 68)
                     }
-                    if filtered.isEmpty { ContentUnavailableView.search(text: search) }
-                    Text("Fictional sample history and local demo payments").font(.caption2).foregroundStyle(Style.gray).padding(16)
-                }.background(.white)
+                    if filtered.isEmpty {
+                        ContentUnavailableView.search(text: search).foregroundStyle(TransactionPalette.secondary).padding(.top, 32)
+                    }
+                }
             }.scrollDismissesKeyboard(.interactively)
-        }.background(Style.background)
+        }
+        .background(TransactionPalette.canvas.ignoresSafeArea())
+        .environment(\.colorScheme, .dark)
+        .tint(TransactionPalette.blue)
         .onAppear { accountID = store.transactionAccountID }
         .sheet(item: $selected) { item in
             NavigationStack {
                 List {
-                    Section { Text(item.title); Text((item.cents < 0 ? "-" : "+") + Demo.money(abs(item.cents))).font(.title2) }
+                    Section { Text(item.title); Text(amount(item)).font(.title2) }
                     Section("Details") {
                         LabeledContent("Status", value: item.scheduled ? "Scheduled" : "Posted")
                         LabeledContent("Date", value: store.dateLabel(item.date))
@@ -105,7 +89,141 @@ struct TransactionsView: View {
                     Section { Text("Independent hackathon simulation. No real money moved.").font(.footnote) }
                 }.navigationTitle("Transaction details").navigationBarTitleDisplayMode(.inline)
                     .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { selected = nil } } }
-            }.presentationDragIndicator(.visible)
+            }.presentationDragIndicator(.visible).environment(\.colorScheme, .dark)
         }
+    }
+
+    private var header: some View {
+        ZStack {
+            Text("Transactions").font(.system(size: 17, weight: .medium)).foregroundStyle(TransactionPalette.primary)
+            HStack {
+                Button { store.path.removeLast() } label: {
+                    Image(systemName: "chevron.left").font(.system(size: 19, weight: .semibold)).frame(width: 44, height: 48)
+                }.accessibilityLabel("Back")
+                Spacer()
+                Menu {
+                    Picker("Transaction type", selection: $filter) {
+                        ForEach(["All", "Money in", "Money out"], id: \.self) { Text($0) }
+                    }
+                    Button("About this demo") { store.explain("Transactions", "Fictional sample history and local demo payments. No real banking service is connected.") }
+                } label: {
+                    Image(systemName: "ellipsis.circle").font(.system(size: 22, weight: .light)).frame(width: 44, height: 48)
+                }.accessibilityLabel("Transaction options")
+            }.foregroundStyle(TransactionPalette.secondary).padding(.horizontal, 16)
+        }.frame(height: 48).background(TransactionPalette.chrome.ignoresSafeArea(edges: .top))
+    }
+
+    private var accountBar: some View {
+        HStack(spacing: 8) {
+            Menu {
+                ForEach(store.ledger.accounts) { value in
+                    Button(store.accountLabel(value)) { accountID = value.id; store.transactionAccountID = value.id }
+                }
+            } label: {
+                Text(account.map { store.accountLabel($0) } ?? "Select account")
+                    .font(.system(size: 14)).lineLimit(1).truncationMode(.middle)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 8).frame(height: 39)
+                    .background(TransactionPalette.canvas, in: RoundedRectangle(cornerRadius: 7))
+                    .overlay(RoundedRectangle(cornerRadius: 7).stroke(TransactionPalette.line, lineWidth: 1))
+            }.accessibilityIdentifier("transaction-account")
+            Button {
+                searching.toggle()
+                if searching { searchFocused = true } else { search = "" }
+            } label: {
+                Image(systemName: "magnifyingglass").font(.system(size: 23, weight: .light))
+                    .frame(width: 39, height: 39)
+                    .background(TransactionPalette.canvas, in: RoundedRectangle(cornerRadius: 7))
+                    .overlay(RoundedRectangle(cornerRadius: 7).stroke(TransactionPalette.line, lineWidth: 1))
+            }.accessibilityLabel(searching ? "Close transaction search" : "Search transactions")
+                .accessibilityIdentifier("transaction-search-toggle")
+        }.foregroundStyle(TransactionPalette.blue).padding(.horizontal, 16).padding(.bottom, 8)
+            .background(TransactionPalette.chrome)
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+            TextField("Search transactions", text: $search).focused($searchFocused)
+                .font(.system(size: 14)).autocorrectionDisabled().textInputAutocapitalization(.never)
+                .accessibilityIdentifier("transaction-search")
+            if !search.isEmpty {
+                Button { search = "" } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel("Clear search")
+            }
+        }.foregroundStyle(TransactionPalette.secondary).padding(12).background(TransactionPalette.chrome)
+    }
+    private func amount(_ item: TransactionItem) -> String {
+        (item.cents < 0 ? "-" : "") + Demo.money(abs(item.cents))
+    }
+}
+
+private enum TransactionPalette {
+    static let canvas = Color(red: 0.031, green: 0.035, blue: 0.063)
+    static let chrome = Color(red: 0.063, green: 0.067, blue: 0.122)
+    static let line = Color(red: 0.16, green: 0.18, blue: 0.29)
+    static let primary = Color(red: 0.94, green: 0.94, blue: 0.97)
+    static let secondary = Color(red: 0.70, green: 0.72, blue: 0.83)
+    static let blue = Color(red: 0.49, green: 0.76, blue: 0.98)
+    static let debit = Color(red: 1, green: 0.45, blue: 0.48)
+}
+
+private struct TransactionRow: View {
+    let item: TransactionItem
+    let balance: Int
+    private var isZelle: Bool { item.title.contains("ZELLE") }
+    var body: some View {
+        HStack(alignment: .center, spacing: 16) {
+            TransactionMark(title: item.title, symbol: item.symbol, incoming: item.cents > 0)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(item.title).font(.system(size: 16)).foregroundStyle(TransactionPalette.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if item.scheduled {
+                    Text("Scheduled").font(.system(size: 14)).foregroundStyle(TransactionPalette.secondary)
+                } else if !isZelle {
+                    Text(item.subtitle).font(.system(size: 14)).foregroundStyle(TransactionPalette.secondary)
+                }
+                if !item.scheduled {
+                    Text(Demo.money(balance)).font(.system(size: 14)).foregroundStyle(TransactionPalette.secondary)
+                }
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            VStack {
+                HStack(spacing: 12) {
+                    Text((item.cents < 0 ? "-" : "") + Demo.money(abs(item.cents)))
+                        .font(.system(size: 16)).foregroundStyle(item.cents < 0 ? TransactionPalette.debit : TransactionPalette.blue)
+                        .fixedSize()
+                    if !isZelle {
+                        Image(systemName: "chevron.right").font(.system(size: 13, weight: .medium)).foregroundStyle(TransactionPalette.secondary)
+                    }
+                }
+                Spacer(minLength: 0)
+            }.padding(.top, 19)
+        }.padding(.leading, 16).padding(.trailing, isZelle ? 36 : 16)
+            .frame(minHeight: isZelle ? 120 : 100)
+            .overlay(alignment: .bottom) { TransactionPalette.line.frame(height: 0.5).padding(.leading, 16) }
+            .contentShape(Rectangle())
+    }
+}
+
+/// Small vector merchant marks, matching the reference's circular treatments.
+private struct TransactionMark: View {
+    let title: String
+    let symbol: String
+    let incoming: Bool
+    var body: some View {
+        ZStack {
+            Circle().fill(title == "UBER EATS" ? Color(red: 0, green: 0.75, blue: 0.39) : title == "AMAZON MARKETPLACE" ? .white : TransactionPalette.chrome)
+            if title == "UBER EATS" {
+                Text("Uber\nEats").font(.system(size: 16, weight: .semibold)).tracking(-1).lineSpacing(-4).foregroundStyle(.black)
+            } else if title == "AMAZON MARKETPLACE" {
+                VStack(spacing: -7) {
+                    Text("amazon").font(.system(size: 9, weight: .bold)).foregroundStyle(.black)
+                    Text("⌣").font(.system(size: 22, weight: .bold)).foregroundStyle(.orange)
+                }
+            } else {
+                Image(systemName: title.contains("ZELLE") ? (incoming ? "dollarsign.arrow.circlepath" : "person.crop.circle") : symbol)
+                    .font(.system(size: 23, weight: .ultraLight)).foregroundStyle(TransactionPalette.secondary)
+            }
+        }.frame(width: 48, height: 48).overlay(Circle().stroke(TransactionPalette.line, lineWidth: 1))
+            .accessibilityHidden(true)
     }
 }

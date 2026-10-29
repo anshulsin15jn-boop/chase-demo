@@ -15,7 +15,7 @@ import DemoCore
     var body: some Scene {
         WindowGroup {
             RootView().environment(store).environment(\.colorScheme, .light)
-                .preferredColorScheme(store.tab == .pay && store.path.isEmpty ? .dark : .light).tint(Style.blue)
+                .preferredColorScheme(store.path.contains(.transactions) || (store.tab == .pay && store.path.isEmpty) ? .dark : .light).tint(Style.blue)
         }
     }
 }
@@ -28,7 +28,6 @@ struct RootView: View {
             Group {
                 switch store.tab {
                 case .accounts: AccountsHomeView()
-                case .transactions: TransactionsView()
                 case .pay: PayTransferHubView()
                 case .plan: VStack { ContentUnavailableView("Plan & track", systemImage: "chart.bar", description: Text("Your local demo goals start here.")); Button("Explore demo planning") { store.explain("Plan & track") } }
                 case .more: MoreView()
@@ -37,6 +36,7 @@ struct RootView: View {
             .navigationDestination(for: Route.self) { route in
                 Group {
                     switch route {
+                    case .transactions: TransactionsView()
                     case .directory: RecipientDirectoryView()
                     case .search: RecipientSearchView()
                     case .amount: EnterAmountView()

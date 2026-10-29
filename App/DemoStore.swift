@@ -2,10 +2,10 @@ import SwiftUI
 import DemoCore
 
 enum RootTab: String, CaseIterable {
-    case accounts = "Accounts", transactions = "Transactions", pay = "Pay & transfer", plan = "Plan & track", more = "More"
-    var icon: String { switch self { case .accounts: "wallet.bifold"; case .transactions: "list.bullet.rectangle"; case .pay: "arrow.triangle.2.circlepath.circle"; case .plan: "list.clipboard"; case .more: "line.3.horizontal" } }
+    case accounts = "Accounts", pay = "Pay & transfer", plan = "Plan & track", more = "More"
+    var icon: String { switch self { case .accounts: "wallet.bifold"; case .pay: "arrow.triangle.2.circlepath.circle"; case .plan: "list.clipboard"; case .more: "line.3.horizontal" } }
 }
-enum Route: Hashable { case directory, search, amount, review, confirmation }
+enum Route: Hashable { case directory, search, amount, review, confirmation, transactions }
 enum DemoSheet: String, Identifiable {
     case information, add, qr, account, date, frequency, activity, profile
     var id: String { rawValue }
