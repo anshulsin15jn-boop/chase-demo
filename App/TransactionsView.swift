@@ -14,6 +14,7 @@ private struct TransactionItem: Identifiable {
 }
 
 struct TransactionsView: View {
+    var preview = false
     @Environment(DemoStore.self) private var store
     @State private var accountID = "checking"
     @State private var search = ""
@@ -22,8 +23,10 @@ struct TransactionsView: View {
     private var account: Account? { store.ledger.accounts.first { $0.id == accountID } ?? store.ledger.accounts.first }
     private var items: [TransactionItem] {
         guard let account else { return [] }
-        let payments = store.ledger.payments.filter { $0.account.id == account.id }.map {
-            TransactionItem(id: $0.id.uuidString, title: "ZELLE PAYMENT TO \($0.recipient.displayName.uppercased())", subtitle: $0.message.isEmpty ? "Zelle® payment" : $0.message, cents: -$0.cents, date: TransactionPresentation.date(for: $0, calendar: store.calendar), symbol: "person.crop.circle", scheduled: $0.scheduled, recipientNumber: $0.recipient.phoneDigits.isEmpty ? $0.recipient.email : $0.recipient.phoneDigits)
+        let payments = store.ledger.payments.filter { $0.account.id == account.id || $0.recipient.id == "transfer-" + account.id }.map { payment in
+            let transfer = payment.recipient.id.hasPrefix("transfer-")
+            let incoming = transfer && payment.account.id != account.id
+            return TransactionItem(id: payment.id.uuidString, title: transfer ? "TRANSFER \(incoming ? "FROM " + payment.account.type : "TO " + payment.recipient.displayName)" : "ZELLE PAYMENT TO \(payment.recipient.displayName.uppercased())", subtitle: payment.message.isEmpty ? "Zelle® payment" : payment.message, cents: incoming ? payment.cents : -payment.cents, date: TransactionPresentation.date(for: payment, calendar: store.calendar), symbol: transfer ? "arrow.left.arrow.right" : "person.crop.circle", scheduled: payment.scheduled, recipientNumber: transfer ? "" : payment.recipient.phoneDigits.isEmpty ? payment.recipient.email : payment.recipient.phoneDigits)
         }
         let samples: [(String, String, Int, String)] = account.id == "savings"
             ? [("INTEREST PAYMENT", "Interest earned", 126, "building.columns"), ("ONLINE TRANSFER FROM CHECKING", "Account transfer", 15000, "arrow.left.arrow.right")]
@@ -33,46 +36,56 @@ struct TransactionsView: View {
         }
         return (payments + history).sorted { $0.date > $1.date }
     }
+    @State private var recentFirst = true
     private var filtered: [TransactionItem] {
-        items.filter { item in
+        let matches = items.filter { item in
             (filter == "All" || (filter == "Money in" && item.cents > 0) || (filter == "Money out" && item.cents < 0)) &&
             (search.isEmpty || "\(item.title) \(item.recipientNumber) \(item.subtitle)".localizedCaseInsensitiveContains(search))
+        }
+        return matches.sorted { left, right in
+            let lp = status(left) == "Pending", rp = status(right) == "Pending"
+            if lp != rp { return lp }
+            return recentFirst ? left.date > right.date : left.date < right.date
         }
     }
     private func balance(after item: TransactionItem) -> Int {
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return account?.cents ?? 0 }
         return (account?.cents ?? 0) - items.prefix(index).filter { !$0.scheduled }.reduce(0) { $0 + $1.cents }
     }
-    @State private var searching = false
     @FocusState private var searchFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
-            header
-            accountBar
-            if searching { searchBar }
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(Array(filtered.enumerated()), id: \.element.id) { index, item in
-                        if index == 0 || !store.calendar.isDate(filtered[index - 1].date, inSameDayAs: item.date) {
-                            Text(store.dateLabel(item.date))
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(TransactionPalette.secondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 16).frame(height: 48)
-                                .background(TransactionPalette.chrome)
+            if preview {
+                ForEach(Array(filtered.prefix(2))) { item in transactionButton(item) }
+            } else {
+                header
+                accountBar
+                HStack {
+                    Spacer()
+                    Button { recentFirst.toggle() } label: {
+                        Label("Sort by : \(recentFirst ? "Recent" : "Oldest")", systemImage: "arrow.up.arrow.down")
+                            .font(.system(size: 12, weight: .medium))
+                    }.accessibilityIdentifier("transaction-sort")
+                }.padding(.horizontal, 16).frame(height: 50).background(Style.background)
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(Array(filtered.enumerated()), id: \.element.id) { index, item in
+                            if status(item) == "Pending" {
+                                if index == 0 { pendingHeader }
+                            } else if index == 0 || status(filtered[index - 1]) == "Pending" || !store.calendar.isDate(filtered[index - 1].date, inSameDayAs: item.date) {
+                                Text(store.dateLabel(item.date)).font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(TransactionPalette.secondary).frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 12).frame(height: 48).background(TransactionPalette.chrome)
+                            }
+                            transactionButton(item)
                         }
-                        Button { selected = item } label: {
-                            TransactionRow(item: item, balance: balance(after: item), status: status(item))
-                        }.buttonStyle(.plain).accessibilityIdentifier("transaction-\(item.id)")
+                        if filtered.isEmpty { ContentUnavailableView.search(text: search).padding(.top, 32) }
                     }
-                    if filtered.isEmpty {
-                        ContentUnavailableView.search(text: search).foregroundStyle(TransactionPalette.secondary).padding(.top, 32)
-                    }
-                }
-            }.scrollDismissesKeyboard(.interactively)
+                }.scrollDismissesKeyboard(.interactively)
+            }
         }
-        .background(TransactionPalette.canvas.ignoresSafeArea())
+        .background(TransactionPalette.canvas)
         .environment(\.colorScheme, .light)
         .tint(TransactionPalette.blue)
         .onAppear { accountID = store.transactionAccountID; store.refreshDay() }
@@ -116,43 +129,49 @@ struct TransactionsView: View {
     }
 
     private var accountBar: some View {
-        HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Showing").font(.system(size: 12)).foregroundStyle(Style.gray)
             Menu {
                 ForEach(store.ledger.accounts) { value in
                     Button(store.accountLabel(value)) { accountID = value.id; store.transactionAccountID = value.id }
                 }
             } label: {
-                Text(account.map { store.accountLabel($0) } ?? "Select account")
-                    .font(.system(size: 14)).lineLimit(1).truncationMode(.middle)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 8).frame(height: 39)
-                    .background(TransactionPalette.canvas, in: RoundedRectangle(cornerRadius: 7))
-                    .overlay(RoundedRectangle(cornerRadius: 7).stroke(TransactionPalette.line, lineWidth: 1))
+                Text(account.map { "\($0.type == "CHECKING" ? "HIGH SCHOOL CHECKING" : "SAVINGS") (...\($0.displaySuffix))" } ?? "Select account")
+                    .font(.system(size: 13)).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
             }.accessibilityIdentifier("transaction-account")
-            Button {
-                searching.toggle()
-                if searching { searchFocused = true } else { search = "" }
-            } label: {
-                Image(systemName: "magnifyingglass").font(.system(size: 23, weight: .light))
-                    .frame(width: 39, height: 39)
-                    .background(TransactionPalette.canvas, in: RoundedRectangle(cornerRadius: 7))
-                    .overlay(RoundedRectangle(cornerRadius: 7).stroke(TransactionPalette.line, lineWidth: 1))
-            }.accessibilityLabel(searching ? "Close transaction search" : "Search transactions")
-                .accessibilityIdentifier("transaction-search-toggle")
-        }.foregroundStyle(TransactionPalette.blue).padding(.horizontal, 16).padding(.bottom, 8)
-            .background(TransactionPalette.chrome)
+            Divider()
+            searchBar
+        }.padding(16).background(.white, in: RoundedRectangle(cornerRadius: 7))
+            .overlay(RoundedRectangle(cornerRadius: 7).stroke(TransactionPalette.line, lineWidth: 0.7))
+            .padding(.horizontal, 12).padding(.bottom, 4).background(Style.background)
+    }
+
+    private var pendingHeader: some View {
+        HStack {
+            let pending = filtered.filter { status($0) == "Pending" }
+            Text("Pending (\(pending.count))")
+            Spacer()
+            Text(Demo.money(abs(pending.reduce(0) { $0 + $1.cents })))
+        }.font(.system(size: 12, weight: .medium)).padding(.horizontal, 12).frame(height: 38)
+            .overlay(alignment: .bottom) { TransactionPalette.line.frame(height: 0.5) }
+    }
+    private func transactionButton(_ item: TransactionItem) -> some View {
+        Button { selected = item } label: {
+            TransactionRow(item: item, balance: balance(after: item), status: status(item), preview: preview)
+        }.buttonStyle(.plain).accessibilityIdentifier("transaction-\(item.id)")
     }
 
     private var searchBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-            TextField("Search transactions", text: $search).focused($searchFocused)
+            TextField("Search or filter transactions", text: $search).focused($searchFocused)
                 .font(.system(size: 14)).autocorrectionDisabled().textInputAutocapitalization(.never)
                 .accessibilityIdentifier("transaction-search")
             if !search.isEmpty {
                 Button { search = "" } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel("Clear search")
             }
-        }.foregroundStyle(TransactionPalette.secondary).padding(12).background(TransactionPalette.chrome)
+        }.foregroundStyle(TransactionPalette.secondary).padding(10).background(.white, in: RoundedRectangle(cornerRadius: 6))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(TransactionPalette.line, lineWidth: 0.7))
     }
     private func status(_ item: TransactionItem) -> String {
         TransactionPresentation.status(date: item.date, scheduled: item.scheduled, isZelle: item.title.contains("ZELLE"), now: store.now, calendar: store.calendar)
@@ -176,6 +195,7 @@ private struct TransactionRow: View {
     let item: TransactionItem
     let balance: Int
     let status: String
+    var preview = false
     private var isZelle: Bool { item.title.contains("ZELLE") }
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
@@ -187,13 +207,13 @@ private struct TransactionRow: View {
                     Text(item.recipientNumber).font(.system(size: 16)).foregroundStyle(TransactionPalette.primary)
                         .accessibilityIdentifier("transaction-number-\(item.id)")
                 }
-                if status != "Posted" {
+                if status != "Posted" && (preview || status != "Pending") {
                     Text(status).accessibilityIdentifier("transaction-status-\(item.id)").font(.system(size: 14)).foregroundStyle(TransactionPalette.secondary)
                 } else if !isZelle {
                     Text(item.subtitle).font(.system(size: 14)).foregroundStyle(TransactionPalette.secondary)
                 }
                 if !item.scheduled {
-                    Text(Demo.money(balance)).font(.system(size: 14)).foregroundStyle(TransactionPalette.secondary)
+                    Text(status == "Pending" ? "--" : Demo.money(balance)).font(.system(size: 14)).foregroundStyle(TransactionPalette.secondary)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading)
             VStack {
@@ -208,7 +228,7 @@ private struct TransactionRow: View {
                 Spacer(minLength: 0)
             }.padding(.top, 19)
         }.padding(.leading, 16).padding(.trailing, isZelle ? 36 : 16)
-            .frame(minHeight: isZelle ? 120 : 100)
+            .frame(minHeight: isZelle ? (preview ? 132 : 100) : 88)
             .overlay(alignment: .bottom) { TransactionPalette.line.frame(height: 0.5).padding(.leading, 16) }
             .contentShape(Rectangle())
     }
@@ -233,7 +253,7 @@ private struct TransactionMark: View {
                 Image(systemName: title.contains("ZELLE") ? (incoming ? "dollarsign.arrow.circlepath" : "person.crop.circle") : symbol)
                     .font(.system(size: 23, weight: .ultraLight)).foregroundStyle(TransactionPalette.secondary)
             }
-        }.frame(width: 48, height: 48).overlay(Circle().stroke(TransactionPalette.line, lineWidth: 1))
+        }.frame(width: 46, height: 46).overlay(Circle().stroke(TransactionPalette.line, lineWidth: 1))
             .accessibilityHidden(true)
     }
 }

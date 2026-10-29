@@ -12,6 +12,7 @@ struct DemoSheetView: View {
                 case .information: ScrollView { VStack(alignment: .leading, spacing: 20) { Text(store.infoTitle).font(.title2.bold()); Text(store.infoText); Text("Independent hackathon simulation").font(.footnote).foregroundStyle(Style.gray) }.padding(24) }.navigationTitle("Demo information")
                 case .add: AddRecipientView()
                 case .profile: ProfileSettingsView()
+                case .transfer: DemoTransferView()
                 case .qr: VStack(spacing: 24) {
                     Image(systemName: "qrcode.viewfinder").font(.system(size: 120, weight: .ultraLight)); Text("Simulated QR scanner").font(.title2)
                     Text("No camera access is requested. Select the sample code to use a demonstration recipient.").multilineTextAlignment(.center)

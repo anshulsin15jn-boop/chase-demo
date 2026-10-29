@@ -5,15 +5,16 @@ enum RootTab: String, CaseIterable {
     case accounts = "Accounts", pay = "Pay & transfer", plan = "Plan & track", more = "More"
     var icon: String { switch self { case .accounts: "wallet.bifold"; case .pay: "arrow.triangle.2.circlepath.circle"; case .plan: "list.clipboard"; case .more: "line.3.horizontal" } }
 }
-enum Route: Hashable { case directory, search, amount, review, confirmation, transactions }
+enum Route: Hashable { case directory, search, amount, review, confirmation, transactions, accountDetails, accountPayments }
 enum DemoSheet: String, Identifiable {
-    case information, add, qr, account, date, frequency, activity, profile
+    case information, add, qr, account, date, frequency, activity, profile, transfer
     var id: String { rawValue }
 }
 @MainActor @Observable final class DemoStore {
     var state = LocalState()
     var tab: RootTab = .accounts
     var transactionAccountID = "checking"
+    private var paymentAccountID = "checking"
     var path: [Route] = []
     var draft: Draft?
     var submitted: Payment?
@@ -86,13 +87,17 @@ enum DemoSheet: String, Identifiable {
     func select(_ recipient: Recipient) {
         refreshDay()
         if draft?.recipient.id != recipient.id {
-            let value = Draft(recipient: recipient, now: now, calendar: calendar)
+            var value = Draft(recipient: recipient, now: now, calendar: calendar)
+            value.accountID = paymentAccountID
             draft = value; baseline = value; submissionID = UUID(); submitted = nil; amountError = nil
         }
         // Publish one complete destination path instead of two observable mutations.
         path = path.filter { $0 != .search && $0 != .amount && $0 != .review } + [.amount]
     }
-    func directory(due: Bool = false) { directoryDue = due; path = [.directory] }
+    func directory(due: Bool = false, accountID: String = "checking") {
+        paymentAccountID = accountID; directoryDue = due
+        path = path.contains(.accountDetails) ? [.accountDetails, .directory] : [.directory]
+    }
     func explain(_ title: String, _ body: String = "This is an independent hackathon simulation. No real account, contact discovery, device service, or payment is accessed.") { infoTitle = title; infoText = body; sheet = .information }
     func cancel() { if meaningful { discard = true } else { clearDraft() } }
     func clearDraft() { discard = false; draft = nil; baseline = nil; submitted = nil; amountError = nil; submissionID = UUID(); path = [.directory] }
@@ -116,6 +121,25 @@ enum DemoSheet: String, Identifiable {
             let payment = try candidate.ledger.submit(draft, id: submissionID, sender: fullName, now: now, calendar: calendar)
             try save(candidate); state = candidate; submitted = payment; path = [.confirmation]
         } catch { present(error) }
+    }
+    func transfer(from source: String, to destination: String, amount: String) throws {
+        refreshDay()
+        func invalid(_ text: String) -> NSError { NSError(domain: "DemoTransfer", code: 1, userInfo: [NSLocalizedDescriptionKey: text]) }
+        guard source != destination, let target = ledger.accounts.first(where: { $0.id == destination }) else { throw invalid("Choose two different accounts.") }
+        let parts = amount.trimmingCharacters(in: .whitespacesAndNewlines).split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count <= 2, let dollars = parts.first, !dollars.isEmpty, dollars.utf8.allSatisfy({ (48...57).contains($0) }) else { throw invalid("Enter a valid dollar amount.") }
+        let fraction = parts.count == 2 ? String(parts[1]) : ""
+        guard fraction.count <= 2, fraction.utf8.allSatisfy({ (48...57).contains($0) }) else { throw invalid("Use at most two decimal places.") }
+        var draft = Draft(recipient: Recipient(id: "transfer-" + destination, name: target.type, registered: false), now: now, calendar: calendar)
+        draft.accountID = source; draft.amount = try CurrencyInput(digits: String(dollars) + fraction + String(repeating: "0", count: 2 - fraction.count))
+        draft.message = "Between your accounts"
+        var candidate = state
+        _ = try candidate.ledger.submit(draft, id: UUID(), sender: fullName, now: now, calendar: calendar)
+        guard let index = candidate.ledger.accounts.firstIndex(where: { $0.id == destination }) else { throw invalid("Account unavailable.") }
+        let (balance, overflow) = candidate.ledger.accounts[index].cents.addingReportingOverflow(draft.amount.cents)
+        guard !overflow else { throw invalid("This amount is too large.") }
+        candidate.ledger.accounts[index].cents = balance
+        try save(candidate); state = candidate
     }
     func reset() {
         var candidate = state; candidate.resetDemo()

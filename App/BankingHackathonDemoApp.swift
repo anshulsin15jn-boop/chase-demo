@@ -36,6 +36,8 @@ struct RootView: View {
             .navigationDestination(for: Route.self) { route in
                 Group {
                     switch route {
+                    case .accountDetails: AccountDetailsView()
+                    case .accountPayments: PayTransferHubView()
                     case .transactions: TransactionsView()
                     case .directory: RecipientDirectoryView()
                     case .search: RecipientSearchView()

@@ -9,6 +9,23 @@ final class StoreTests: XCTestCase {
         let store = DemoStore(repository: nil, clock: clock, calendarProvider: calendar, initialState: LocalState(accountsInitialized: true))
         store.completeOnboarding("Avery", lastName: "Collins"); store.select(Demo.recipients[0]); return store
     }
+    @MainActor func testLocalTransferUpdatesBothAccountsAndRejectsInvalidInput() throws {
+        let day = date, cal = calendar
+        let value = store(clock: { day }, calendar: { cal })
+        let before = value.ledger.accounts
+        try value.transfer(from: "checking", to: "savings", amount: "12.34")
+        XCTAssertEqual(value.ledger.accounts[0].cents, before[0].cents - 1234)
+        XCTAssertEqual(value.ledger.accounts[1].cents, before[1].cents + 1234)
+        XCTAssertEqual(value.ledger.payments.count, 1)
+        XCTAssertEqual(value.ledger.payments[0].recipient.id, "transfer-savings")
+        let after = value.ledger.accounts
+        XCTAssertThrowsError(try value.transfer(from: "checking", to: "checking", amount: "1"))
+        XCTAssertThrowsError(try value.transfer(from: "checking", to: "savings", amount: "1.234"))
+        XCTAssertThrowsError(try value.transfer(from: "checking", to: "savings", amount: "9999999"))
+        XCTAssertEqual(value.ledger.accounts, after)
+        XCTAssertEqual(value.ledger.payments.count, 1)
+    }
+
     @MainActor func testInlineErrorOnlyAfterReviewAndNewDraftStartsAtZero() throws {
         let day = date, cal = calendar
         let value = store(clock: { day }, calendar: { cal })
