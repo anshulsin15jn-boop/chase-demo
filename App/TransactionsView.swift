@@ -67,7 +67,7 @@ struct TransactionsView: View {
                         Label("Sort by : \(recentFirst ? "Recent" : "Oldest")", systemImage: "arrow.up.arrow.down")
                             .font(.system(size: 12, weight: .medium))
                     }.accessibilityIdentifier("transaction-sort")
-                }.padding(.horizontal, 16).frame(height: 50).background(Style.background)
+                }.padding(.horizontal, 16).frame(height: 50).background(TransactionPalette.chrome)
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(Array(filtered.enumerated()), id: \.element.id) { index, item in
@@ -143,7 +143,7 @@ struct TransactionsView: View {
             searchBar
         }.padding(16).background(.white, in: RoundedRectangle(cornerRadius: 7))
             .overlay(RoundedRectangle(cornerRadius: 7).stroke(TransactionPalette.line, lineWidth: 0.7))
-            .padding(.horizontal, 12).padding(.bottom, 4).background(Style.background)
+            .padding(.horizontal, 12).padding(.bottom, 4).background(TransactionPalette.chrome)
     }
 
     private var pendingHeader: some View {
@@ -183,7 +183,7 @@ struct TransactionsView: View {
 
 private enum TransactionPalette {
     static let canvas = Color.white
-    static let chrome = Style.background
+    static let chrome = Color(red: 246.0 / 255, green: 247.0 / 255, blue: 251.0 / 255)
     static let line = Color(red: 0.83, green: 0.85, blue: 0.88)
     static let primary = Color.black
     static let secondary = Style.gray
@@ -201,12 +201,10 @@ private struct TransactionRow: View {
         HStack(alignment: .center, spacing: 16) {
             TransactionMark(title: item.title, symbol: item.symbol, incoming: item.cents > 0)
             VStack(alignment: .leading, spacing: 5) {
-                Text(item.title).font(.system(size: 16)).foregroundStyle(TransactionPalette.primary)
+                Text(item.title + (isZelle && !item.recipientNumber.isEmpty ? " " + item.recipientNumber : ""))
+                    .font(.system(size: 15, weight: .medium)).foregroundStyle(TransactionPalette.primary)
                     .fixedSize(horizontal: false, vertical: true)
-                if isZelle && !item.recipientNumber.isEmpty {
-                    Text(item.recipientNumber).font(.system(size: 16)).foregroundStyle(TransactionPalette.primary)
-                        .accessibilityIdentifier("transaction-number-\(item.id)")
-                }
+                    .accessibilityIdentifier(isZelle ? "transaction-number-\(item.id)" : "transaction-description-\(item.id)")
                 if status != "Posted" && (preview || status != "Pending") {
                     Text(status).accessibilityIdentifier("transaction-status-\(item.id)").font(.system(size: 14)).foregroundStyle(TransactionPalette.secondary)
                 } else if !isZelle {
@@ -228,7 +226,7 @@ private struct TransactionRow: View {
                 Spacer(minLength: 0)
             }.padding(.top, 19)
         }.padding(.leading, 16).padding(.trailing, isZelle ? 36 : 16)
-            .frame(minHeight: isZelle ? (preview ? 132 : 100) : 88)
+            .frame(minHeight: isZelle ? (preview ? 108 : 96) : 88)
             .overlay(alignment: .bottom) { TransactionPalette.line.frame(height: 0.5).padding(.leading, 16) }
             .contentShape(Rectangle())
     }

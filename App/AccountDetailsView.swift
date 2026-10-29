@@ -35,7 +35,7 @@ struct AccountDetailsView: View {
                     }.accountCard()
                 }.padding(.horizontal, 6).padding(.top, 14).padding(.bottom, 24)
             }
-        }.background(Style.background).environment(\.colorScheme, .light)
+        }.background(Color(red: 246.0 / 255, green: 247.0 / 255, blue: 251.0 / 255)).environment(\.colorScheme, .light)
     }
     private var balanceCard: some View {
         VStack(alignment: .leading, spacing: 18) {

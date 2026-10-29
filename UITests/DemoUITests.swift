@@ -101,7 +101,7 @@ final class DemoUITests: XCTestCase {
         app.buttons["tab-Accounts"].tap()
         app.staticTexts["account-label-checking"].tap()
         let number = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH %@", "transaction-number-")).firstMatch
-        XCTAssertTrue(number.waitForExistence(timeout: 5)); XCTAssertEqual(number.label, "2025550146")
+        XCTAssertTrue(number.waitForExistence(timeout: 5)); XCTAssertTrue(number.label.contains("2025550146"))
         let status = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH %@", "transaction-status-")).firstMatch
         XCTAssertTrue(status.exists); XCTAssertEqual(status.label, "Pending")
         app.buttons["Back"].tap()
