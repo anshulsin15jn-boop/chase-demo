@@ -1,6 +1,8 @@
 name: Build and verify iPhone demo
 on:
   workflow_dispatch:
+  push:
+    branches: ["Om's-changes"]
 permissions:
   contents: read
 concurrency:
