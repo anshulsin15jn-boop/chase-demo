@@ -15,7 +15,7 @@ import DemoCore
     var body: some Scene {
         WindowGroup {
             RootView().environment(store).environment(\.colorScheme, .light)
-                .preferredColorScheme(store.path.contains(.transactions) || (store.tab == .pay && store.path.isEmpty) ? .dark : .light).tint(Style.blue)
+                .preferredColorScheme((store.tab == .pay && store.path.isEmpty) ? .dark : .light).tint(Style.blue)
         }
     }
 }

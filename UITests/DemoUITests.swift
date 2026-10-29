@@ -82,6 +82,13 @@ final class DemoUITests: XCTestCase {
         XCTAssertTrue(app.buttons["confirmation-done"].waitForNonExistence(timeout: 5))
         app.buttons["See activity"].staticTexts["See activity"].tap(); XCTAssertTrue(app.navigationBars["Demo activity"].waitForExistence(timeout: 5))
         let saved = app.staticTexts.matching(identifier: "activity-message").firstMatch; XCTAssertTrue(saved.waitForExistence(timeout: 5)); XCTAssertEqual(saved.label, "Demo lunch"); app.buttons["Close"].tap()
+        app.buttons["tab-Accounts"].tap()
+        app.staticTexts["account-label-checking"].tap()
+        let number = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH %@", "transaction-number-")).firstMatch
+        XCTAssertTrue(number.waitForExistence(timeout: 5)); XCTAssertEqual(number.label, "2025550146")
+        let status = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH %@", "transaction-status-")).firstMatch
+        XCTAssertTrue(status.exists); XCTAssertEqual(status.label, "Pending")
+        app.buttons["Back"].tap()
         app.buttons["tab-More"].tap(); app.buttons["reset-demo"].tap(); app.buttons["Reset demo now"].tap()
         XCTAssertTrue(app.buttons["send-zelle"].waitForExistence(timeout: 5)); XCTAssertTrue(app.staticTexts["$2,486.70"].exists); XCTAssertFalse(app.textFields["first-name"].exists)
         app.buttons["tab-More"].tap(); app.buttons["Simulated activity"].tap(); XCTAssertTrue(app.staticTexts["No demo payments yet"].waitForExistence(timeout: 5))

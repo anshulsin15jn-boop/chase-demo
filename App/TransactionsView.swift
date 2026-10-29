@@ -10,6 +10,7 @@ private struct TransactionItem: Identifiable {
     let date: Date
     let symbol: String
     let scheduled: Bool
+    var recipientNumber = ""
 }
 
 struct TransactionsView: View {
@@ -22,20 +23,20 @@ struct TransactionsView: View {
     private var items: [TransactionItem] {
         guard let account else { return [] }
         let payments = store.ledger.payments.filter { $0.account.id == account.id }.map {
-            TransactionItem(id: $0.id.uuidString, title: "ZELLE PAYMENT TO \($0.recipient.displayName.uppercased())", subtitle: $0.message.isEmpty ? "Zelle® payment" : $0.message, cents: -$0.cents, date: $0.date, symbol: "person.crop.circle", scheduled: $0.scheduled)
+            TransactionItem(id: $0.id.uuidString, title: "ZELLE PAYMENT TO \($0.recipient.displayName.uppercased())", subtitle: $0.message.isEmpty ? "Zelle® payment" : $0.message, cents: -$0.cents, date: TransactionPresentation.date(for: $0, calendar: store.calendar), symbol: "person.crop.circle", scheduled: $0.scheduled, recipientNumber: $0.recipient.phoneDigits.isEmpty ? $0.recipient.email : $0.recipient.phoneDigits)
         }
         let samples: [(String, String, Int, String)] = account.id == "savings"
             ? [("INTEREST PAYMENT", "Interest earned", 126, "building.columns"), ("ONLINE TRANSFER FROM CHECKING", "Account transfer", 15000, "arrow.left.arrow.right")]
             : [("UBER EATS", "Uber", -1231, "bag"), ("ZELLE PAYMENT FROM AVERY MORGAN", "Zelle® payment", 2500, "person.crop.circle"), ("AMAZON MARKETPLACE", "Amazon.com", -2614, "shippingbox"), ("TARGET", "Debit card purchase", -1849, "cart"), ("ZELLE PAYMENT TO JORDAN ELLIS", "Dinner", -1500, "person.crop.circle"), ("COFFEE HOUSE", "Debit card purchase", -575, "cup.and.saucer"), ("GROCERY MARKET", "Debit card purchase", -4238, "basket"), ("PAYROLL DEPOSIT", "Direct deposit", 62500, "building.columns")]
         let history = samples.enumerated().map { index, entry in
-            TransactionItem(id: "sample-\(account.id)-\(index)", title: entry.0, subtitle: entry.1, cents: entry.2, date: store.calendar.date(byAdding: .day, value: -(index / 2 + 1), to: store.calendar.startOfDay(for: store.now)) ?? store.now, symbol: entry.3, scheduled: false)
+            TransactionItem(id: "sample-\(account.id)-\(index)", title: entry.0, subtitle: entry.1, cents: entry.2, date: store.calendar.date(byAdding: .day, value: -(index / 2 + 1), to: store.calendar.startOfDay(for: store.now)) ?? store.now, symbol: entry.3, scheduled: false, recipientNumber: entry.0.contains("AVERY MORGAN") ? "2025550188" : entry.0.contains("JORDAN ELLIS") ? "2025550146" : "")
         }
         return (payments + history).sorted { $0.date > $1.date }
     }
     private var filtered: [TransactionItem] {
         items.filter { item in
             (filter == "All" || (filter == "Money in" && item.cents > 0) || (filter == "Money out" && item.cents < 0)) &&
-            (search.isEmpty || "\(item.title) \(item.subtitle)".localizedCaseInsensitiveContains(search))
+            (search.isEmpty || "\(item.title) \(item.recipientNumber) \(item.subtitle)".localizedCaseInsensitiveContains(search))
         }
     }
     private func balance(after item: TransactionItem) -> Int {
@@ -62,7 +63,7 @@ struct TransactionsView: View {
                                 .background(TransactionPalette.chrome)
                         }
                         Button { selected = item } label: {
-                            TransactionRow(item: item, balance: balance(after: item))
+                            TransactionRow(item: item, balance: balance(after: item), status: status(item))
                         }.buttonStyle(.plain).accessibilityIdentifier("transaction-\(item.id)")
                     }
                     if filtered.isEmpty {
@@ -72,15 +73,16 @@ struct TransactionsView: View {
             }.scrollDismissesKeyboard(.interactively)
         }
         .background(TransactionPalette.canvas.ignoresSafeArea())
-        .environment(\.colorScheme, .dark)
+        .environment(\.colorScheme, .light)
         .tint(TransactionPalette.blue)
-        .onAppear { accountID = store.transactionAccountID }
+        .onAppear { accountID = store.transactionAccountID; store.refreshDay() }
         .sheet(item: $selected) { item in
             NavigationStack {
                 List {
                     Section { Text(item.title); Text(amount(item)).font(.title2) }
                     Section("Details") {
-                        LabeledContent("Status", value: item.scheduled ? "Scheduled" : "Posted")
+                        LabeledContent("Status", value: status(item))
+                        if !item.recipientNumber.isEmpty { LabeledContent("Recipient number", value: item.recipientNumber) }
                         LabeledContent("Date", value: store.dateLabel(item.date))
                         LabeledContent("Account", value: account.map { store.accountLabel($0) } ?? "")
                         LabeledContent("Description", value: item.subtitle)
@@ -89,7 +91,7 @@ struct TransactionsView: View {
                     Section { Text("Independent hackathon simulation. No real money moved.").font(.footnote) }
                 }.navigationTitle("Transaction details").navigationBarTitleDisplayMode(.inline)
                     .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { selected = nil } } }
-            }.presentationDragIndicator(.visible).environment(\.colorScheme, .dark)
+            }.presentationDragIndicator(.visible).environment(\.colorScheme, .light)
         }
     }
 
@@ -152,24 +154,28 @@ struct TransactionsView: View {
             }
         }.foregroundStyle(TransactionPalette.secondary).padding(12).background(TransactionPalette.chrome)
     }
+    private func status(_ item: TransactionItem) -> String {
+        TransactionPresentation.status(date: item.date, scheduled: item.scheduled, isZelle: item.title.contains("ZELLE"), now: store.now, calendar: store.calendar)
+    }
     private func amount(_ item: TransactionItem) -> String {
         (item.cents < 0 ? "-" : "") + Demo.money(abs(item.cents))
     }
 }
 
 private enum TransactionPalette {
-    static let canvas = Color(red: 0.031, green: 0.035, blue: 0.063)
-    static let chrome = Color(red: 0.063, green: 0.067, blue: 0.122)
-    static let line = Color(red: 0.16, green: 0.18, blue: 0.29)
-    static let primary = Color(red: 0.94, green: 0.94, blue: 0.97)
-    static let secondary = Color(red: 0.70, green: 0.72, blue: 0.83)
-    static let blue = Color(red: 0.49, green: 0.76, blue: 0.98)
-    static let debit = Color(red: 1, green: 0.45, blue: 0.48)
+    static let canvas = Color.white
+    static let chrome = Style.background
+    static let line = Color(red: 0.83, green: 0.85, blue: 0.88)
+    static let primary = Color.black
+    static let secondary = Style.gray
+    static let blue = Style.blue
+    static let debit = Color(red: 0.72, green: 0.17, blue: 0.20)
 }
 
 private struct TransactionRow: View {
     let item: TransactionItem
     let balance: Int
+    let status: String
     private var isZelle: Bool { item.title.contains("ZELLE") }
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
@@ -177,8 +183,12 @@ private struct TransactionRow: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(item.title).font(.system(size: 16)).foregroundStyle(TransactionPalette.primary)
                     .fixedSize(horizontal: false, vertical: true)
-                if item.scheduled {
-                    Text("Scheduled").font(.system(size: 14)).foregroundStyle(TransactionPalette.secondary)
+                if isZelle && !item.recipientNumber.isEmpty {
+                    Text(item.recipientNumber).font(.system(size: 16)).foregroundStyle(TransactionPalette.primary)
+                        .accessibilityIdentifier("transaction-number-\(item.id)")
+                }
+                if status != "Posted" {
+                    Text(status).accessibilityIdentifier("transaction-status-\(item.id)").font(.system(size: 14)).foregroundStyle(TransactionPalette.secondary)
                 } else if !isZelle {
                     Text(item.subtitle).font(.system(size: 14)).foregroundStyle(TransactionPalette.secondary)
                 }
