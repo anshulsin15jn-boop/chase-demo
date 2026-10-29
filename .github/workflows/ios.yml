@@ -51,6 +51,15 @@ jobs:
           xcrun simctl boot "$SIMULATOR_ID" 2>/dev/null || true
           xcrun simctl bootstatus "$SIMULATOR_ID" -b
           xcrun simctl spawn "$SIMULATOR_ID" defaults write com.apple.keyboard.preferences DidShowContinuousPathIntroduction -bool YES
+      - name: Capture account and transaction screens for visual review
+        timeout-minutes: 2
+        run: bash scripts/capture.sh account-details transactions
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Account-and-transaction-screens
+          path: build/screenshots/
+          retention-days: 3
+          if-no-files-found: error
       - name: Build and test native main flow
         run: |
           set -o pipefail

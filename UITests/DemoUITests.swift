@@ -21,6 +21,22 @@ final class DemoUITests: XCTestCase {
     func keyboardDone() { app.buttons.matching(identifier: "keyboard-done").firstMatch.tap() }
     func enterJordan() { app.buttons["send-zelle"].tap(); app.buttons["recent-jordan"].tap() }
 
+    func testAccountOverviewNavigationAndVisibleLayout() {
+        onboard()
+        app.staticTexts["account-label-checking"].tap()
+        let balance = app.staticTexts["detail-balance"]
+        XCTAssertTrue(balance.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["account-pay"].isHittable)
+        XCTAssertTrue(app.buttons["account-transfer"].isHittable)
+        XCTAssertTrue(app.buttons["see-all-transactions"].isHittable)
+        XCTAssertLessThan(balance.frame.maxY, app.buttons["account-pay"].frame.minY)
+        XCTAssertLessThan(app.buttons["account-pay"].frame.maxY, app.buttons["see-all-transactions"].frame.minY)
+        app.buttons["account-pay"].tap()
+        XCTAssertTrue(app.buttons["hub-action-1"].waitForExistence(timeout: 5))
+        app.buttons["hub-action-1"].tap()
+        XCTAssertTrue(app.buttons["recent-jordan"].waitForExistence(timeout: 5))
+    }
+
     func testTransactionsSearchDetailsAndAccountSelection() {
         onboard()
         XCTAssertFalse(app.buttons["tab-Transactions"].exists)

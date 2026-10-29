@@ -7,7 +7,12 @@ xcrun simctl boot "$SIMULATOR_ID" 2>/dev/null || true
 xcrun simctl bootstatus "$SIMULATOR_ID" -b
 xcrun simctl install "$SIMULATOR_ID" "$APP"
 mkdir -p build/screenshots
-for screen in accounts directory hub amount amount-error search review confirmation add onboarding amount-created confirmation-created confirmation-long confirmation-number profile; do
+if [ "$#" -gt 0 ]; then
+  screens=("$@")
+else
+  screens=(account-details transactions accounts directory hub amount amount-error search review confirmation add onboarding amount-created confirmation-created confirmation-long confirmation-number profile)
+fi
+for screen in "${screens[@]}"; do
   xcrun simctl terminate "$SIMULATOR_ID" "$BUNDLE" 2>/dev/null || true
   xcrun simctl launch "$SIMULATOR_ID" "$BUNDLE" --demo-screen "$screen"
   sleep 3
