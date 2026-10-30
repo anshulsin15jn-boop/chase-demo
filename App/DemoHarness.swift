@@ -35,6 +35,13 @@ import DemoCore
         if screen == "onboarding" { return }
         store.completeOnboarding("Avery", lastName: "Collins")
         switch screen {
+        case "account-details", "transactions":
+            for (index, recipient) in Demo.recipients.prefix(2).enumerated() {
+                var draft = Draft(recipient: recipient, now: date, calendar: calendar)
+                draft.amount = try! CurrencyInput(digits: "100")
+                _ = try! store.state.ledger.submit(draft, id: UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", index + 1))!, sender: store.fullName, now: date, calendar: calendar)
+            }
+            store.path = screen == "transactions" ? [.accountDetails, .transactions] : [.accountDetails]
         case "profile": store.sheet = .profile
         case "amount-created", "confirmation-created", "confirmation-long", "confirmation-number":
             let name = screen == "confirmation-number" ? "" : screen == "confirmation-long" ? "Alexandra-Marie O'Neil Rivera Bennett" : "Jamie Vale"

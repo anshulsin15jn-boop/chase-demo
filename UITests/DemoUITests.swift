@@ -21,6 +21,43 @@ final class DemoUITests: XCTestCase {
     func keyboardDone() { app.buttons.matching(identifier: "keyboard-done").firstMatch.tap() }
     func enterJordan() { app.buttons["send-zelle"].tap(); app.buttons["recent-jordan"].tap() }
 
+    func testAccountOverviewNavigationAndVisibleLayout() {
+        onboard()
+        app.staticTexts["account-label-checking"].tap()
+        let balance = app.staticTexts["detail-balance"]
+        XCTAssertTrue(balance.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["account-pay"].isHittable)
+        XCTAssertTrue(app.buttons["account-transfer"].isHittable)
+        XCTAssertTrue(app.buttons["see-all-transactions"].isHittable)
+        XCTAssertLessThan(balance.frame.maxY, app.buttons["account-pay"].frame.minY)
+        XCTAssertLessThan(app.buttons["account-pay"].frame.maxY, app.buttons["see-all-transactions"].frame.minY)
+        app.buttons["account-pay"].tap()
+        XCTAssertTrue(app.buttons["hub-action-1"].waitForExistence(timeout: 5))
+        app.buttons["hub-action-1"].tap()
+        XCTAssertTrue(app.buttons["recent-jordan"].waitForExistence(timeout: 5))
+    }
+
+    func testTransactionsSearchDetailsAndAccountSelection() {
+        onboard()
+        XCTAssertFalse(app.buttons["tab-Transactions"].exists)
+        app.staticTexts["account-label-checking"].tap()
+        XCTAssertTrue(app.buttons["account-pay"].waitForExistence(timeout: 5))
+        app.buttons["see-all-transactions"].tap()
+        XCTAssertTrue(app.buttons["transaction-sample-checking-0"].waitForExistence(timeout: 5))
+        app.buttons["transaction-sample-checking-0"].tap()
+        XCTAssertTrue(app.staticTexts["Transaction details"].waitForExistence(timeout: 5))
+        app.buttons["Done"].tap()
+        let search = app.textFields["transaction-search"]
+        search.tap(); dismissKeyboardIntro(); search.typeText("AMAZON")
+        XCTAssertTrue(app.buttons["transaction-sample-checking-2"].exists)
+        XCTAssertFalse(app.buttons["transaction-sample-checking-0"].exists)
+        app.buttons["Clear search"].tap()
+        app.buttons["transaction-account"].tap()
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "SAVINGS")).firstMatch.tap()
+        XCTAssertTrue(app.buttons["transaction-sample-savings-0"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["transaction-sample-checking-0"].exists)
+    }
+
     func testFirstNameMigrationAndPersistence() {
         app.terminate()
         let suite = UUID().uuidString
@@ -61,6 +98,13 @@ final class DemoUITests: XCTestCase {
         XCTAssertTrue(app.buttons["confirmation-done"].waitForNonExistence(timeout: 5))
         app.buttons["See activity"].staticTexts["See activity"].tap(); XCTAssertTrue(app.navigationBars["Demo activity"].waitForExistence(timeout: 5))
         let saved = app.staticTexts.matching(identifier: "activity-message").firstMatch; XCTAssertTrue(saved.waitForExistence(timeout: 5)); XCTAssertEqual(saved.label, "Demo lunch"); app.buttons["Close"].tap()
+        app.buttons["tab-Accounts"].tap()
+        app.staticTexts["account-label-checking"].tap()
+        let number = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH %@", "transaction-number-")).firstMatch
+        XCTAssertTrue(number.waitForExistence(timeout: 5)); XCTAssertTrue(number.label.contains("2025550146"))
+        let status = app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH %@", "transaction-status-")).firstMatch
+        XCTAssertTrue(status.exists); XCTAssertEqual(status.label, "Pending")
+        app.buttons["Back"].tap()
         app.buttons["tab-More"].tap(); app.buttons["reset-demo"].tap(); app.buttons["Reset demo now"].tap()
         XCTAssertTrue(app.buttons["send-zelle"].waitForExistence(timeout: 5)); XCTAssertTrue(app.staticTexts["$2,486.70"].exists); XCTAssertFalse(app.textFields["first-name"].exists)
         app.buttons["tab-More"].tap(); app.buttons["Simulated activity"].tap(); XCTAssertTrue(app.staticTexts["No demo payments yet"].waitForExistence(timeout: 5))

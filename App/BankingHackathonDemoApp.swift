@@ -15,7 +15,7 @@ import DemoCore
     var body: some Scene {
         WindowGroup {
             RootView().environment(store).environment(\.colorScheme, .light)
-                .preferredColorScheme(store.tab == .pay && store.path.isEmpty ? .dark : .light).tint(Style.blue)
+                .preferredColorScheme((store.tab == .pay && store.path.isEmpty) ? .dark : .light).tint(Style.blue)
         }
     }
 }
@@ -36,6 +36,9 @@ struct RootView: View {
             .navigationDestination(for: Route.self) { route in
                 Group {
                     switch route {
+                    case .accountDetails: AccountDetailsView()
+                    case .accountPayments: PayTransferHubView()
+                    case .transactions: TransactionsView()
                     case .directory: RecipientDirectoryView()
                     case .search: RecipientSearchView()
                     case .amount: EnterAmountView()
@@ -92,8 +95,8 @@ struct BottomBar: View {
         HStack(spacing: 0) {
             ForEach(RootTab.allCases, id: \.self) { tab in
                 Button { store.tab = tab } label: {
-                    VStack(spacing: 4) { Image(systemName: tab.icon).font(.system(size: 23)); Text(tab.rawValue).font(.system(size: 10)) }
-                        .frame(maxWidth: .infinity).frame(height: 58).foregroundStyle(store.tab == tab ? Style.blue : Style.gray)
+                    VStack(spacing: 3) { Image(systemName: tab.icon).font(.system(size: 20)); Text(tab.rawValue).font(.system(size: 9)) }
+                        .frame(maxWidth: .infinity).frame(height: 50).foregroundStyle(store.tab == tab ? Style.blue : Style.gray)
                 }.accessibilityIdentifier("tab-\(tab.rawValue)")
             }
         }.padding(.horizontal, 6).background(.white, in: Capsule()).shadow(color: .black.opacity(0.04), radius: 12, y: 5)
