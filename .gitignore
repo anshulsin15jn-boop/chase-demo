@@ -22,6 +22,12 @@ xcuserdata/
 *.dSYM/
 .env
 .env.*
+scripts/demo_sms.env
+App/MessagingEndpoint.url
+App/MessagingEndpoint.local.swift
+scripts/demo_sms_state.sqlite3*
+__pycache__/
+*.pyc
 *.p12
 *.mobileprovision
 *.cer

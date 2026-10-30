@@ -5,13 +5,14 @@ import DemoCore
 final class StoreTests: XCTestCase {
     var calendar: Calendar { var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(secondsFromGMT: 0)!; return c }
     var date: Date { ISO8601DateFormatter().date(from: "2026-11-12T12:00:00Z")! }
-    @MainActor func store(clock: @escaping () -> Date, calendar: @escaping () -> Calendar) -> DemoStore {
-        let store = DemoStore(repository: nil, clock: clock, calendarProvider: calendar, initialState: LocalState(accountsInitialized: true))
+    @MainActor func store(clock: @escaping () -> Date, calendar: @escaping () -> Calendar, messaging: DemoMessageDelivery = DisabledDemoMessageDelivery()) -> DemoStore {
+        let store = DemoStore(repository: nil, clock: clock, calendarProvider: calendar, initialState: LocalState(accountsInitialized: true), messaging: messaging)
         store.completeOnboarding("Avery", lastName: "Collins"); store.select(Demo.recipients[0]); return store
     }
     @MainActor func testInlineErrorOnlyAfterReviewAndNewDraftStartsAtZero() throws {
         let day = date, cal = calendar
         let value = store(clock: { day }, calendar: { cal })
+        XCTAssertFalse(value.sendsDemoMessages)
         XCTAssertNil(value.amountError); XCTAssertEqual(value.draft?.amount.formatted, "$0.00")
         value.review(); XCTAssertEqual(value.amountError, "Please tell us an amount."); XCTAssertNil(value.error)
         value.draft?.amount = try CurrencyInput(digits: "500"); value.done(); value.select(Demo.recipients[0])
@@ -95,5 +96,29 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(value.submitted, submitted); XCTAssertEqual(value.ledger.payments, [submitted])
         XCTAssertEqual(submitted.sender, "Avery Collins"); XCTAssertEqual(submitted.account.label, "AVERY COLLINS CHECKING (..5020)")
         XCTAssertEqual(value.draft?.amount.cents, 500)
+    }
+    @MainActor func testSubmitSucceedsWhenDeliveryFails() async throws {
+        let day = date, cal = calendar
+        let recording = RecordingDelivery()
+        let value = store(clock: { day }, calendar: { cal }, messaging: recording)
+        XCTAssertTrue(value.sendsDemoMessages)
+        value.draft?.amount = try CurrencyInput(digits: "500"); await value.send()
+        await value.waitForMessaging()
+        XCTAssertEqual(value.ledger.payments.count, 1); XCTAssertNotNil(value.submitted)
+        XCTAssertEqual(recording.delivered.count, 1)
+        XCTAssertEqual(recording.delivered[0].sender, "AVERY COLLINS")
+        XCTAssertEqual(recording.delivered[0].cents, 500)
+        XCTAssertEqual(recording.delivered[0].destination, "+12025550146")
+        XCTAssertTrue(recording.delivered[0].body.contains("$5.00"))
+        XCTAssertFalse(recording.delivered[0].body.contains("Chase | Zelle"))
+    }
+}
+
+final class RecordingDelivery: DemoMessageDelivery, @unchecked Sendable {
+    private let lock = NSLock()
+    private(set) var delivered: [DemoMessage] = []
+    func deliver(_ message: DemoMessage) async throws {
+        lock.lock(); delivered.append(message); lock.unlock()
+        throw DemoMessagingError.disabled
     }
 }

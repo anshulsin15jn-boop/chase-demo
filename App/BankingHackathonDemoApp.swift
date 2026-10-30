@@ -6,9 +6,9 @@ import DemoCore
     @State private var store: DemoStore
     init() {
         #if DEBUG
-        let value = DemoHarness.makeStore(arguments: ProcessInfo.processInfo.arguments) ?? DemoStore()
+        let value = DemoHarness.makeStore(arguments: ProcessInfo.processInfo.arguments) ?? DemoStore(messaging: MessagingEndpoint.delivery)
         #else
-        let value = DemoStore()
+        let value = DemoStore(messaging: MessagingEndpoint.delivery)
         #endif
         _store = State(initialValue: value)
     }
@@ -69,7 +69,7 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 22) {
                 Text("Chase Demo").font(.largeTitle.bold())
                 Text(store.state.profile == nil ? "What’s your name?" : "Complete your name").font(.title2.weight(.medium))
-                Text("Your name stays on this device and personalizes the simulated accounts. No banking sign in is needed.").foregroundStyle(Style.gray)
+                Text("Your name personalizes the simulated accounts and is stored locally. Optional demo SMS shares payment details only when you enable it in settings. No banking sign in is needed.").foregroundStyle(Style.gray)
                 TextField("First name", text: $name).textContentType(.givenName).textInputAutocapitalization(.words)
                     .autocorrectionDisabled().focused($focused, equals: .first).padding(14)
                     .background(Style.background, in: RoundedRectangle(cornerRadius: 8)).accessibilityIdentifier("first-name")
@@ -103,16 +103,18 @@ struct BottomBar: View {
 struct MoreView: View {
     @Environment(DemoStore.self) private var store
     @State private var reset = false
+    @State private var smsSettings = false
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("More").font(.largeTitle.bold()); Text("Chase Demo").font(.title2)
-            Text("An independent hackathon simulation, not affiliated with Chase or Zelle. Names, recipients and activity stay on this device. No real payments, notifications, contact discovery or analytics.").foregroundStyle(Style.gray)
+            Text("An independent hackathon simulation, not affiliated with Chase or Zelle. No real payments, contact discovery or analytics. Optional demo SMS shares submitted payment details with your configured relay and SMS provider.").foregroundStyle(Style.gray)
             MenuRow(title: "Simulated activity", icon: "list.bullet.rectangle") { store.sheet = .activity }
             MenuRow(title: "Personal details", icon: "person.crop.circle") { store.sheet = .profile }
+            MenuRow(title: "Demo SMS", icon: "message") { smsSettings = true }
             Button("Reset demo", role: .destructive) { reset = true }.accessibilityIdentifier("reset-demo")
             Text("Reset restores sample recipients and your saved starting balances, clears activity, and keeps your name and account suffixes.").font(.footnote).foregroundStyle(Style.gray)
             Spacer()
-        }.padding(20).confirmationDialog("Restore sample recipients and clear simulated activity?", isPresented: $reset, titleVisibility: .visible) {
+        }.padding(20).sheet(isPresented: $smsSettings) { DemoSMSSettingsView() }.confirmationDialog("Restore sample recipients and clear simulated activity?", isPresented: $reset, titleVisibility: .visible) {
             Button("Reset demo now", role: .destructive) { store.reset() }
         }
     }

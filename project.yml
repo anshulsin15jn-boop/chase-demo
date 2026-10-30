@@ -17,7 +17,10 @@ targets:
   BankingHackathonDemo:
     type: application
     platform: iOS
-    sources: [App]
+    sources:
+      - path: App
+        excludes:
+          - MessagingEndpoint.url
     dependencies:
       - package: DemoCore
     settings:
@@ -35,6 +38,11 @@ targets:
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UIUserInterfaceStyle: Light
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: Chase Demo may reach a local helper to send a labeled simulation text.
+    info:
+      properties:
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
   DemoUITests:
     type: bundle.ui-testing
     platform: iOS

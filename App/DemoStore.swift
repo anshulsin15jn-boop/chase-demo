@@ -32,11 +32,16 @@ enum DemoSheet: String, Identifiable {
     @ObservationIgnored private let repository: LocalPersistence?
     @ObservationIgnored private let clock: () -> Date
     @ObservationIgnored private let calendarProvider: () -> Calendar
+    @ObservationIgnored private var messaging: DemoMessageDelivery
+    @ObservationIgnored private var messagingTask: Task<Void, Never>?
+    private(set) var sendsDemoMessages: Bool
     private var persistenceBlocked = false
 
     init(repository: LocalPersistence? = LocalPersistence(), clock: @escaping () -> Date = Date.init,
-         calendarProvider: @escaping () -> Calendar = { .autoupdatingCurrent }, initialState: LocalState? = nil) {
+         calendarProvider: @escaping () -> Calendar = { .autoupdatingCurrent }, initialState: LocalState? = nil,
+         messaging: DemoMessageDelivery = DisabledDemoMessageDelivery()) {
         self.repository = repository; self.clock = clock; self.calendarProvider = calendarProvider
+        self.messaging = messaging; sendsDemoMessages = !(messaging is DisabledDemoMessageDelivery)
         now = clock(); calendar = calendarProvider()
         if let initialState { state = initialState }
         else if let repository {
@@ -114,7 +119,15 @@ enum DemoSheet: String, Identifiable {
             var candidate = state
             let payment = try candidate.ledger.submit(draft, id: submissionID, sender: fullName, now: now, calendar: calendar)
             try save(candidate); state = candidate; submitted = payment; path = [.confirmation]
+            let delivery = messaging
+            let snapshot = payment
+            messagingTask = Task.detached { try? await delivery.deliver(DemoMessage(payment: snapshot)) }
         } catch { present(error) }
+    }
+    func waitForMessaging() async { await messagingTask?.value }
+    func configureMessaging(_ delivery: DemoMessageDelivery) {
+        messaging = delivery
+        sendsDemoMessages = !(delivery is DisabledDemoMessageDelivery)
     }
     func reset() {
         var candidate = state; candidate.resetDemo()

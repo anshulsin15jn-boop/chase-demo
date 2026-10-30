@@ -1,6 +1,6 @@
 # Chase Demo
 
-An independent native SwiftUI hackathon simulation, not affiliated with Chase or Zelle. No real transfers, notifications, contact discovery, analytics, or banking sign in. Names and recipients entered at runtime stay in the app's local device storage.
+An independent native SwiftUI hackathon simulation, not affiliated with Chase or Zelle. No real transfers, contact discovery, analytics, or banking sign in. Names and recipients are stored locally. Optional, explicitly enabled demo SMS shares submitted payment details with your private relay and SMS provider for opted-in test recipients. See [setup and verification](docs/MESSAGING.md). These SMS source changes have not been built into a new IPA.
 
 ## Version 0.4 update
 
@@ -8,13 +8,13 @@ Onboarding requires separate first and last names, with an optional middle name.
 
 A newly initialized profile receives checking between $1,000.00 and $3,000.00 and savings between $2,000.00 and $4,000.00, independently sampled in integer cents. Distinct four-digit suffixes are generated and stored once, including leading zeros. Profile edits and relaunches do not regenerate accounts. Existing balances are preserved; missing current-account suffixes are assigned once during local migration. Historical account snapshots are never reassigned. Reset restores this profile's saved starting accounts and clears demo activity while retaining its name and suffixes. Deterministic samples remain confined to tests/debug capture setup and the inaccessible pre-onboarding state.
 
-The gray HACKATHON DEMO header subtitle is removed while retaining the Confirmation title's typography and position. A small footer identifies the screen as a local simulation. Messaging has [architecture only](docs/MESSAGING.md): an immutable, clearly labeled simulation payload and a disabled transport interface. There is no provider, networking, credentials, SMS UI or sending action. See [version 0.4 verification](docs/VERIFICATION-0.4.md) for build status.
+The gray HACKATHON DEMO header subtitle is removed while retaining the Confirmation title's typography and position. A small footer identifies the screen as a local simulation. Messaging uses an immutable, clearly labeled simulation payload. Default builds keep a disabled transport. An optional local Twilio helper can send that payload after confirmation; secrets stay out of the app and GitHub. See [messaging](docs/MESSAGING.md) and [version 0.4 verification](docs/VERIFICATION-0.4.md).
 
 Version 0.3 adds a shared demo recipient identity and a revised Confirmation screen. Created and legacy recipients default to simulated registration, Personal account and Feb 2025 activity metadata. These are presentation fixtures, not registration checks. A native vector badge is shared by every avatar, and the Siri demonstration button uses a drawn multicolor orb.
 
-Confirmation uses the immutable submitted payment's full uppercase recipient name, selected calendar date and exact amount. Its reference-style notification paragraph is demonstration interface copy only; no messages or money are sent. The entry row continues to show Today when appropriate. See [version 0.3 verification](docs/VERIFICATION-0.3.md) for the update's build and release status.
+Confirmation uses the immutable submitted payment's full uppercase recipient name, selected calendar date and exact amount. Its reference-style notification paragraph is demonstration interface copy only; no money is sent. Optional demo SMS requires separate configuration. The entry row continues to show Today when appropriate. See [version 0.3 verification](docs/VERIFICATION-0.3.md) for that release's status.
 
-The existing local storage key and bundle identifier are retained. First-name-only users are prompted for the missing last name after the update, without resetting their local state. Runtime names are never logged, transmitted or included in builds.
+The existing local storage key and bundle identifier are retained. First-name-only users are prompted for the missing last name after the update, without resetting their local state. Runtime names are never included in builds or app logs. Optional demo SMS transmits the submitted snapshot's names, phone number and amount to the configured relay and provider.
 
 For a synthetic full name of Avery Lane Collins and sample suffixes, labels could be `AVERY LANE COLLINS CHECKING (..0007)` and `AVERY LANE COLLINS SAVINGS (..1842)`. Checking and savings remain separate accounts. These suffix examples are not production defaults.
 

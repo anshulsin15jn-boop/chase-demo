@@ -127,7 +127,7 @@ struct ConfirmationView: View {
                     }
                 }
                 PrimaryButton(title: "Done") { store.done() }.accessibilityIdentifier("confirmation-done").padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 6)
-                Text("Local simulation. No money or messages are sent.").font(.system(size: 10)).foregroundStyle(Style.gray).frame(height: 16).padding(.bottom, 4).accessibilityIdentifier("confirmation-demo-notice")
+                Text(store.sendsDemoMessages ? "Demo only. Texts go only to opted-in test numbers." : "Local simulation. No money or messages are sent.").font(.system(size: 10)).foregroundStyle(Style.gray).frame(height: 16).padding(.bottom, 4).accessibilityIdentifier("confirmation-demo-notice")
             }
         }.background(.white).task {
             if reduceMotion { check = true; content = true }
